@@ -16,7 +16,7 @@
           <!-- Hidden image for particle effect -->
           <img 
             :ref="el => imageRefs[index] = el as HTMLImageElement"
-            :src="profilesData[2].profileFoto"
+            :src="profile.profileFoto"
             :alt="`Profile Photo ${index + 1}`"
             class="hidden-image"
           />
@@ -58,6 +58,7 @@ import { ref, onMounted, nextTick } from 'vue'
 import { useParticleEffect } from '~/composables/useParticleEffect'
 
 const randomizedProfiles = ref<typeof profilesData>([...profilesData])
+
 const mainCanvas = ref<HTMLCanvasElement | null>(null)
 const imageRefs = ref<(HTMLImageElement | null)[]>([])
 
@@ -90,9 +91,11 @@ onMounted(() => {
 }
 
 .profile-section {
-  /* margin-bottom: 5rem;
-  display: flex; */
+  /* /* margin-bottom: 5rem; */
+  /* display: flex; */
+  margin-bottom: 7rem;
   gap: 2rem;
+  position: relative;
 }
 
 .image-placeholder {
@@ -102,7 +105,8 @@ onMounted(() => {
 }
 
 .profile-content {
-  flex-grow: 1;
+  position: absolute;
+  top: 0;
 }
 
 .description {
@@ -124,7 +128,6 @@ onMounted(() => {
   margin-bottom: 5rem;
   font-size: 2rem;
   color: #222;
-  padding: 0 20px;
 }
 
 .social-links a {

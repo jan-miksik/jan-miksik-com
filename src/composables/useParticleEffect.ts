@@ -1,6 +1,9 @@
-const FRICTION = 0.999
-// random between 0.9 - 0.999
 const GAP = 2
+
+const MIN_FRICTION = 0.98;
+const MAX_FRICTION = 0.995;
+const MIN_VARIATION = 0.001;
+const MAX_VARIATION = 0.005;
 
 class Particle {
   public x: number;
@@ -31,7 +34,7 @@ class Particle {
     this.vx = 0;
     this.vy = 0;
     this.ease = 0.03;
-    const variation = friction * (0.01 + Math.random() * 0.02); // Random value between 0.5-1% of base friction
+    const variation = MIN_VARIATION + Math.random() * (MAX_VARIATION - MIN_VARIATION);
     this.friction = friction + variation;
     this.dx = 0;
     this.dy = 0;
@@ -125,7 +128,7 @@ class Effect implements EffectProps {
     tempCtx.drawImage(image, x, y);
     
     const pixels = tempCtx.getImageData(0, 0, this.width, this.height).data;
-    const friction = 0.95 + Math.random() * 0.049;
+    const friction = MIN_FRICTION + Math.random() * (MAX_FRICTION - MIN_FRICTION); // Random friction between 0.9 and 0.993
 
     for (let y = 0; y < this.height; y += this.gap) {
       for (let x = 0; x < this.width; x += this.gap) {
@@ -152,7 +155,6 @@ class Effect implements EffectProps {
 }
 
 export function useParticleEffect(canvas: HTMLCanvasElement) {
-  console.log('Starting particle effect setup');
   const ctx = canvas.getContext('2d');
   if (!ctx) {
     console.error('Failed to get canvas context');
@@ -160,26 +162,46 @@ export function useParticleEffect(canvas: HTMLCanvasElement) {
   }
 
   try {
-    // Make canvas fullscreen
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    // Function to get full document height
+    const getDocHeight = () => Math.max(
+      document.body.scrollHeight,
+      document.documentElement.scrollHeight,
+      document.body.offsetHeight,
+      document.documentElement.offsetHeight,
+      document.body.clientHeight,
+      document.documentElement.clientHeight
+    );
 
-    // Create single effect instance
+    // Set initial canvas size
+    const updateCanvasSize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = getDocHeight();
+      canvas.style.height = `${getDocHeight()}px`; // Explicitly set style height
+    };
+
+    updateCanvasSize();
     const effect = new Effect(canvas.width, canvas.height);
-    
+
+    // Update canvas size when content changes
+    const resizeObserver = new ResizeObserver(() => {
+      updateCanvasSize();
+      effect.width = canvas.width;
+      effect.height = canvas.height;
+    });
+    resizeObserver.observe(document.body);
+
     // Handle window resize
     window.addEventListener('resize', () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      updateCanvasSize();
       effect.width = canvas.width;
       effect.height = canvas.height;
     });
 
-    // Update mouse coordinates relative to canvas position
+    // Update mouse coordinates with scroll position
     window.addEventListener('mousemove', (event) => {
       const rect = canvas.getBoundingClientRect();
-      effect.mouse.x = event.clientX - rect.left;
-      effect.mouse.y = event.clientY - rect.top;
+      effect.mouse.x = event.clientX;
+      effect.mouse.y = event.clientY + window.scrollY;
     });
 
     function animate() {
@@ -191,9 +213,10 @@ export function useParticleEffect(canvas: HTMLCanvasElement) {
     }
     animate();
 
-    // Return function to add new images
+    // Return function that adds images and updates canvas if needed
     return (image: HTMLImageElement, x: number, y: number) => {
       effect.addImage(image, x, y);
+      updateCanvasSize(); // Update canvas size when new image is added
     };
     
   } catch (error) {
