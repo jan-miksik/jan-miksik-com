@@ -1,0 +1,9 @@
+{
+"sites": [
+    {
+    "slug": "gigantic-greece-sparse",
+    "distDir": ".output/public",
+    "buildCommand": "yarn install && yarn generate"
+    }
+  ]
+}
