@@ -3,26 +3,33 @@
     <h1 class="title">Name of all persons here is<br>
       Jan Mikšík</h1>
     <ClientOnly>
-      <!-- Single canvas for all profiles -->
-      <canvas ref="mainCanvas" class="fullscreen-canvas"></canvas>
+      <!-- Canvas only shows on desktop -->
+      <canvas v-if="!isMobile" ref="mainCanvas" class="fullscreen-canvas"></canvas>
       
-      <!-- Profile sections with proper positioning -->
       <div class="profiles-container">
         <div 
           v-for="(profile, index) in randomizedProfiles" 
           :key="profile.profileFoto"
           class="profile-section"
         >
-          <!-- Hidden image for particle effect -->
+          <!-- Show normal image on mobile -->
           <img 
+            v-if="isMobile"
+            :src="profile.profileFoto"
+            :alt="`Profile Photo ${index + 1}`"
+            class="profile-image"
+          />
+          <!-- Hidden image for particle effect on desktop -->
+          <img 
+            v-else
             :ref="el => imageRefs[index] = el as HTMLImageElement"
             :src="profile.profileFoto"
             :alt="`Profile Photo ${index + 1}`"
             class="hidden-image"
           />
           
-          <!-- Image placeholder to maintain layout -->
-          <div class="image-placeholder"></div>
+          <!-- Image placeholder only needed for desktop -->
+          <div v-if="!isMobile" class="image-placeholder"></div>
           
           <div class="profile-content">
             <p class="description" v-if="profile.description">
@@ -58,20 +65,28 @@ import { ref, onMounted, nextTick } from 'vue'
 import { useParticleEffect } from '~/composables/useParticleEffect'
 
 const randomizedProfiles = ref<typeof profilesData>([...profilesData])
-
 const mainCanvas = ref<HTMLCanvasElement | null>(null)
 const imageRefs = ref<(HTMLImageElement | null)[]>([])
+const isMobile = ref(false)
 
 onMounted(() => {
+  // Check if device is mobile
+  isMobile.value = window.innerWidth <= 768
+  
+  // Update isMobile on resize
+  window.addEventListener('resize', () => {
+    isMobile.value = window.innerWidth <= 768
+  })
+
   randomizedProfiles.value = [...profilesData].sort(() => Math.random() - 0.5)
 
   nextTick(() => {
+    if (isMobile.value) return // Don't initialize canvas on mobile
     if (!mainCanvas.value) return
     
     const addImage = useParticleEffect(mainCanvas.value)
     if (!addImage) return
     
-    // Calculate positions based on image placeholders
     imageRefs.value
       .filter((img): img is HTMLImageElement => img !== null)
       .forEach((image, index) => {
@@ -155,6 +170,39 @@ onMounted(() => {
 
 .hidden-image {
   display: none;
+}
+
+.profile-image {
+  width: 150px;
+  height: 150px;
+  object-fit: cover;
+  margin-bottom: 1rem;
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  .profile-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 5rem;
+    gap: 0;
+  }
+
+  .profile-content {
+    position: static;
+    margin-top: 0;
+  }
+
+  .description {
+    margin: 0 auto;
+  }
+
+  .title {
+    text-align: center;
+    font-size: 1.7rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
