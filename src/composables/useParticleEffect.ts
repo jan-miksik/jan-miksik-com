@@ -95,16 +95,19 @@ class Effect implements EffectProps {
     image: HTMLImageElement;
     x: number;
     y: number;
-  }>;
+    width: number;
+    height: number;
+  }> = [];
+  private frame: number;
 
   constructor(width: number, height: number) {
     this.width = width;
     this.height = height;
     this.particlesArray = [];
-    this.images = [];
     this.centerX = this.width * 0.5;
     this.centerY = this.height * 0.5;
     this.gap = GAP;
+    this.frame = 0;
     this.mouse = {
       radius: 3000,
       x: undefined,
@@ -112,9 +115,65 @@ class Effect implements EffectProps {
     };
   }
 
+  private checkCollision(x: number, y: number, width: number, height: number): boolean {
+    const padding = 150; // Extra space between images
+    
+    for (const img of this.images) {
+      // Check if rectangles overlap
+      if (!(x + width + padding < img.x || 
+            x > img.x + img.width + padding || 
+            y + height + padding < img.y || 
+            y > img.y + img.height + padding)) {
+        return true; // Collision detected
+      }
+    }
+    return false; // No collision
+  }
+
+  private findValidPosition(image: HTMLImageElement): { x: number; y: number } {
+    const margin = 100;
+    const maxAttempts = 50;
+    
+    // Consider text height when calculating valid positions
+    const textHeight = 200; // Approximate height for text content
+    const totalHeight = image.height + textHeight;
+    
+    // Log actual dimensions
+    // console.log('Canvas dimensions:', this.width, this.height);
+    
+    for (let i = 0; i < maxAttempts; i++) {
+      const x = margin + Math.random() * (this.width - image.width - 2 * margin);
+      const y = margin + Math.random() * (this.height - totalHeight - 2 * margin);
+      
+      // Log attempted position
+      // console.log('Trying position:', x, y);
+      
+      if (!this.checkCollision(x, y, image.width, totalHeight)) {
+        // console.log('Found valid position:', x, y);
+        return { x, y };
+      }
+    }
+    
+    // If no valid position found, stack vertically
+    const lastImage = this.images[this.images.length - 1];
+    const y = lastImage ? lastImage.y + lastImage.height + textHeight + 50 : margin;
+    const x = margin + Math.random() * (this.width - image.width - 2 * margin);
+    
+    console.log('Fallback position:', x, y);
+    return { x, y };
+  }
+
   addImage(image: HTMLImageElement, x: number, y: number) {
-    this.images.push({ image, x, y });
-    this.initImage(image, x, y);
+    const position = this.findValidPosition(image);
+    this.images.push({ 
+      image, 
+      x: position.x, 
+      y: position.y,
+      width: image.width,
+      height: image.height
+    });
+    this.initImage(image, position.x, position.y);
+    return position;
   }
 
   private initImage(image: HTMLImageElement, x: number, y: number) {
@@ -151,44 +210,52 @@ class Effect implements EffectProps {
   }
   update(){
     this.particlesArray.forEach(particle => particle.update())
+
+    // optimization
+    // this.frame++;
+    // this.particlesArray.forEach((particle, index) => {
+    //   if (index % 2 === this.frame % 2) particle.update(); // Update half the particles per frame
+    // });
   }
 }
 
 export function useParticleEffect(canvas: HTMLCanvasElement) {
   const ctx = canvas.getContext('2d');
-  if (!ctx) {
-    console.error('Failed to get canvas context');
-    return;
-  }
+  if (!ctx) return;
 
   try {
-    // Function to get full document height
-    const getDocHeight = () => Math.max(
-      document.body.scrollHeight,
-      document.documentElement.scrollHeight,
-      document.body.offsetHeight,
-      document.documentElement.offsetHeight,
-      document.body.clientHeight,
-      document.documentElement.clientHeight
-    );
+    // Get full document height
+    const getDocHeight = () => {
+      const body = document.body;
+      const html = document.documentElement;
+      
+      return Math.max(
+        body.scrollHeight,
+        body.offsetHeight,
+        html.clientHeight,
+        html.scrollHeight,
+        html.offsetHeight,
+        2300
+      );
+    };
 
     // Set initial canvas size
     const updateCanvasSize = () => {
       canvas.width = window.innerWidth;
       canvas.height = getDocHeight();
-      canvas.style.height = `${getDocHeight()}px`; // Explicitly set style height
+      canvas.style.height = `${getDocHeight()}px`;
     };
 
     updateCanvasSize();
     const effect = new Effect(canvas.width, canvas.height);
 
     // Update canvas size when content changes
-    const resizeObserver = new ResizeObserver(() => {
+    const observer = new ResizeObserver(() => {
       updateCanvasSize();
       effect.width = canvas.width;
       effect.height = canvas.height;
     });
-    resizeObserver.observe(document.body);
+    observer.observe(document.body);
 
     // Handle window resize
     window.addEventListener('resize', () => {
@@ -215,8 +282,9 @@ export function useParticleEffect(canvas: HTMLCanvasElement) {
 
     // Return function that adds images and updates canvas if needed
     return (image: HTMLImageElement, x: number, y: number) => {
-      effect.addImage(image, x, y);
-      updateCanvasSize(); // Update canvas size when new image is added
+      const position = effect.addImage(image, x, y);
+      updateCanvasSize(); // Update canvas size after adding each image
+      return position;
     };
     
   } catch (error) {

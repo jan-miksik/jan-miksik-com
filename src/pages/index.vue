@@ -1,7 +1,7 @@
 <template>
-  <div>
-    <h1 class="title">Name of all persons here is<br>
-      Jan Mikšík</h1>
+  <div class="main-container">
+    <h1 class="title"><span class="title-part-a">Name of all persons here is</span><br>
+      <span class="title-part-b">Jan Mikšík</span></h1>
     <ClientOnly>
       <!-- Canvas only shows on desktop -->
       <canvas v-if="!isMobile" ref="mainCanvas" class="fullscreen-canvas"></canvas>
@@ -11,6 +11,7 @@
           v-for="(profile, index) in randomizedProfiles" 
           :key="profile.profileFoto"
           class="profile-section"
+          :style="`left: ${imagePositions[index]?.x}px; top: ${imagePositions[index]?.y}px`"
         >
           <!-- Show normal image on mobile -->
           <img 
@@ -68,6 +69,7 @@ const randomizedProfiles = ref<typeof profilesData>([...profilesData])
 const mainCanvas = ref<HTMLCanvasElement | null>(null)
 const imageRefs = ref<(HTMLImageElement | null)[]>([])
 const isMobile = ref(false)
+const imagePositions = ref<Array<{ x: number; y: number }>>([])
 
 onMounted(() => {
   // Check if device is mobile
@@ -90,38 +92,33 @@ onMounted(() => {
     imageRefs.value
       .filter((img): img is HTMLImageElement => img !== null)
       .forEach((image, index) => {
-        const placeholder = document.querySelectorAll('.image-placeholder')[index]
-        if (placeholder) {
-          const rect = placeholder.getBoundingClientRect()
-          addImage(image, rect.left, rect.top)
-        }
+        const position = addImage(image, 0, 0) // Position will be determined by Effect class
+        imagePositions.value[index] = position // Store position for text placement
       })
   })
 })
 </script>
 
 <style scoped>
-.profiles-container {
-  position: relative
+
+.main-container {
+  font-family: system-ui !important;
 }
 
 .profile-section {
-  /* /* margin-bottom: 5rem; */
-  /* display: flex; */
-  margin-bottom: 7rem;
-  gap: 2rem;
-  position: relative;
-}
-
-.image-placeholder {
-  width: 150px;
-  height: 150px;
-  flex-shrink: 0;
+  width: 300px;
+  position: absolute;
 }
 
 .profile-content {
   position: absolute;
-  top: 0;
+  top: 100%; /* Position directly under the image */
+  left: 0;
+  margin-left: -7px;
+  z-index: -1;
+  width: 164px;
+  text-align: justify;
+  line-height: 20px;
 }
 
 .description {
@@ -136,13 +133,18 @@ onMounted(() => {
   word-wrap: break-word;
   word-break: normal;
   hyphens: auto;
-  line-height: 1.5;
 }
 
 .title {
   margin-bottom: 5rem;
   font-size: 2rem;
   color: #222;
+  text-align: center;
+}
+
+.title-part-a {
+  font-size: 1.6rem;
+  opacity: 0.8;
 }
 
 .social-links a {
@@ -188,11 +190,18 @@ onMounted(() => {
     text-align: center;
     margin-bottom: 5rem;
     gap: 0;
+    position: relative;
+    z-index: 1;
   }
 
   .profile-content {
     position: static;
     margin-top: 0;
+    width: 160px;
+    margin-left: -3px;
+    text-align: justify;
+    line-height: 18px;
+    font-size: 15px;
   }
 
   .description {
@@ -202,6 +211,10 @@ onMounted(() => {
   .title {
     text-align: center;
     font-size: 1.7rem;
+  }
+
+  .social-links a {
+    white-space: nowrap;
   }
 }
 
