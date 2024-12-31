@@ -67,11 +67,8 @@ interface EffectProps {
   width: number;
   height: number;
   particlesArray: Particle[];
-  // image: HTMLImageElement;
   centerX: number;
   centerY: number;
-  // x: number;
-  // y: number;
   gap: number;
   mouse: {
     radius: number;
@@ -84,11 +81,8 @@ class Effect implements EffectProps {
   public width: number;
   public height: number;
   public particlesArray: Particle[];
-  // public image: HTMLImageElement;
   public centerX: number;
   public centerY: number;
-  // public x: number;
-  // public y: number;
   public gap: number;
   public mouse: { radius: number; x: number | undefined; y: number | undefined };
   private images: Array<{
@@ -130,50 +124,15 @@ class Effect implements EffectProps {
     return false; // No collision
   }
 
-  private findValidPosition(image: HTMLImageElement): { x: number; y: number } {
-    const margin = 100;
-    const maxAttempts = 50;
-    
-    // Consider text height when calculating valid positions
-    const textHeight = 200; // Approximate height for text content
-    const totalHeight = image.height + textHeight;
-    
-    // Log actual dimensions
-    // console.log('Canvas dimensions:', this.width, this.height);
-    
-    for (let i = 0; i < maxAttempts; i++) {
-      const x = margin + Math.random() * (this.width - image.width - 2 * margin);
-      const y = margin + Math.random() * (this.height - totalHeight - 2 * margin);
-      
-      // Log attempted position
-      // console.log('Trying position:', x, y);
-      
-      if (!this.checkCollision(x, y, image.width, totalHeight)) {
-        // console.log('Found valid position:', x, y);
-        return { x, y };
-      }
-    }
-    
-    // If no valid position found, stack vertically
-    const lastImage = this.images[this.images.length - 1];
-    const y = lastImage ? lastImage.y + lastImage.height + textHeight + 50 : margin;
-    const x = margin + Math.random() * (this.width - image.width - 2 * margin);
-    
-    console.log('Fallback position:', x, y);
-    return { x, y };
-  }
-
   addImage(image: HTMLImageElement, x: number, y: number) {
-    const position = this.findValidPosition(image);
     this.images.push({ 
       image, 
-      x: position.x, 
-      y: position.y,
+      x, 
+      y,
       width: image.width,
       height: image.height
     });
-    this.initImage(image, position.x, position.y);
-    return position;
+    this.initImage(image, x, y);
   }
 
   private initImage(image: HTMLImageElement, x: number, y: number) {
@@ -281,9 +240,9 @@ export function useParticleEffect(canvas: HTMLCanvasElement) {
     animate();
 
     // Return function that adds images and updates canvas if needed
-    return (image: HTMLImageElement, x: number, y: number) => {
-      const position = effect.addImage(image, x, y);
-      updateCanvasSize(); // Update canvas size after adding each image
+    return (image: HTMLImageElement, position: { x: number, y: number }) => {
+      effect.addImage(image, position.x, position.y);
+      updateCanvasSize();
       return position;
     };
     

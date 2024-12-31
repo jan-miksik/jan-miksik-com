@@ -4,7 +4,16 @@
       <span class="title-part-b">Jan Mikšík</span></h1>
     <ClientOnly>
       <!-- Canvas only shows on desktop -->
-      <canvas v-if="!isMobile" ref="mainCanvas" class="fullscreen-canvas"></canvas>
+      <Suspense>
+        <canvas 
+          v-if="!isMobile" 
+          ref="mainCanvas" 
+          class="fullscreen-canvas"
+        ></canvas>
+        <template #fallback>
+          <div class="loading">Loading...</div>
+        </template>
+      </Suspense>
       
       <div class="profiles-container">
         <div 
@@ -62,14 +71,16 @@
 
 <script setup lang="ts">
 import { profilesData } from '~/data'
-import { ref, onMounted, nextTick } from 'vue'
 import { useParticleEffect } from '~/composables/useParticleEffect'
+import { findValidPosition } from '~/composables/useFindValidPosition'
 
 const randomizedProfiles = ref<typeof profilesData>([...profilesData])
 const mainCanvas = ref<HTMLCanvasElement | null>(null)
 const imageRefs = ref<(HTMLImageElement | null)[]>([])
 const isMobile = ref(false)
 const imagePositions = ref<Array<{ x: number; y: number }>>([])
+// const isCanvasReady = ref(false)
+
 
 onMounted(() => {
   // Check if device is mobile
@@ -80,22 +91,46 @@ onMounted(() => {
     isMobile.value = window.innerWidth <= 768
   })
 
+  if (isMobile.value) return;
+
   randomizedProfiles.value = [...profilesData].sort(() => Math.random() - 0.5)
 
-  nextTick(() => {
-    if (isMobile.value) return // Don't initialize canvas on mobile
-    if (!mainCanvas.value) return
-    
-    const addImage = useParticleEffect(mainCanvas.value)
-    if (!addImage) return
-    
+  nextTick(async () => {
+    const existingPositions: Array<{ x: number, y: number, width: number, height: number }> = [];
+
+    // First, position all text blocks
+    randomizedProfiles.value.forEach((profile, index) => {
+      const textWidth = 164;
+      const textHeight = 150;
+      
+      const position = findValidPosition(textWidth, textHeight, existingPositions);
+      
+      existingPositions.push({
+        ...position,
+        width: textWidth,
+        height: textHeight
+      });
+      imagePositions.value[index] = position;
+    });
+
+
+    if (!mainCanvas.value) return;
+    const addImage = useParticleEffect(mainCanvas.value);
+    if (!addImage) return;
+
+    // Then, add images to match text positions
     imageRefs.value
       .filter((img): img is HTMLImageElement => img !== null)
       .forEach((image, index) => {
-        const position = addImage(image, 0, 0) // Position will be determined by Effect class
-        imagePositions.value[index] = position // Store position for text placement
-      })
-  })
+        const textPosition = imagePositions.value[index];
+
+        const imagePosition = {
+          x: textPosition.x,
+          y: textPosition.y
+        };
+        addImage(image, imagePosition);
+      });
+  });
 })
 </script>
 
@@ -112,13 +147,14 @@ onMounted(() => {
 
 .profile-content {
   position: absolute;
-  top: 100%; /* Position directly under the image */
+  top: 100%;
   left: 0;
   margin-left: -7px;
   z-index: -1;
-  width: 164px;
+  width: 167px;
   text-align: justify;
   line-height: 20px;
+  font-size: 15px;
 }
 
 .description {
