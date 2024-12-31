@@ -21,8 +21,8 @@ class Particle {
   private distance: number;
   private force: number;
   private angle: number;
-  private originX: number;
-  private originY: number;
+  public originX: number;
+  public originY: number;
   public active: boolean;
 
   constructor(effect: Effect, x: number, y: number, color: string, friction: number) {
@@ -52,44 +52,55 @@ class Particle {
   }
 
   update() {
+    // If particle is not active, only check if it needs to return to origin
+    if (!this.active) {
+      const dx = this.originX - this.x;
+      const dy = this.originY - this.y;
+      const distanceFromOrigin = dx * dx + dy * dy;
+      
+      // Only activate return-to-origin behavior if particle is displaced
+      if (distanceFromOrigin > 0.1) {
+        this.x += dx * this.ease;
+        this.y += dy * this.ease;
+        return true;
+      }
+      return false;
+    }
+
+    // Active particle behavior remains the same
     this.dx = (this.effect.mouse.x ?? 0) - this.x;
     this.dy = (this.effect.mouse.y ?? 0) - this.y;
     this.distance = this.dx * this.dx + this.dy * this.dy;
 
-    // Check if particle should be active
     if (this.distance < this.effect.mouse.radius) {
-      this.active = true;
+      this.force = -this.effect.mouse.radius / this.distance;
+      this.angle = Math.atan2(this.dy, this.dx);
+      this.vx += this.force * Math.cos(this.angle);
+      this.vy += this.force * Math.sin(this.angle);
     }
 
-    // If particle is active, apply forces
-    if (this.active) {
-      if (this.distance < this.effect.mouse.radius) {
-        this.force = -this.effect.mouse.radius / this.distance;
-        this.angle = Math.atan2(this.dy, this.dx);
-        this.vx += this.force * Math.cos(this.angle);
-        this.vy += this.force * Math.sin(this.angle);
-      }
+    // Update position
+    this.x += (this.vx *= this.friction);
+    this.y += (this.vy *= this.friction);
 
-      // Update position
-      this.x += (this.vx *= this.friction);
-      this.y += (this.vy *= this.friction);
+    // Add spring force back to original position
+    const dx = this.originX - this.x;
+    const dy = this.originY - this.y;
+    this.x += dx * this.ease;
+    this.y += dy * this.ease;
 
-      // Add spring force back to original position
-      const dx = this.originX - this.x;
-      const dy = this.originY - this.y;
-      this.x += dx * this.ease;
-      this.y += dy * this.ease;
-
-      // Check if particle should become inactive
-      const distanceFromOrigin = dx * dx + dy * dy;
-      if (distanceFromOrigin < 0.1 && Math.abs(this.vx) < 0.01 && Math.abs(this.vy) < 0.01) {
-        this.active = false;
-        this.x = this.originX;
-        this.y = this.originY;
-        this.vx = 0;
-        this.vy = 0;
-      }
+    // Check if particle should become inactive
+    const distanceFromOrigin = dx * dx + dy * dy;
+    if (distanceFromOrigin < 0.1 && Math.abs(this.vx) < 0.01 && Math.abs(this.vy) < 0.01) {
+      this.active = false;
+      this.x = this.originX;
+      this.y = this.originY;
+      this.vx = 0;
+      this.vy = 0;
+      return false;
     }
+
+    return true;
   }
 }
 
@@ -122,7 +133,7 @@ class Effect implements EffectProps {
     width: number;
     height: number;
   }> = [];
-  private animationId: number | null = null;
+  private needsRedraw: boolean = true;
 
   constructor(width: number, height: number) {
     this.width = width;
@@ -178,21 +189,40 @@ class Effect implements EffectProps {
   }
 
   draw(context: CanvasRenderingContext2D) {
-    this.particlesArray.forEach(particle => particle.draw(context));
+    // Only redraw if needed
+    if (this.needsRedraw) {
+      context.clearRect(0, 0, this.width, this.height);
+      this.particlesArray.forEach(particle => particle.draw(context));
+      this.needsRedraw = false;
+    }
   }
 
   update() {
     let hasActiveParticles = false;
+    const mouseRadiusSquared = this.mouse.radius ** 2;
+    
     this.particlesArray.forEach(particle => {
-      particle.update();
-      if (particle.active) {
-        hasActiveParticles = true;
+      const dx = particle.x - (this.mouse.x ?? 0);
+      const dy = particle.y - (this.mouse.y ?? 0);
+      const distanceSquared = dx * dx + dy * dy;
+      
+      if (distanceSquared < mouseRadiusSquared) {
+        particle.active = true;
+        if (particle.update()) {
+          hasActiveParticles = true;
+          this.needsRedraw = true;
+        }
+      } else if (particle.active || particle.x !== particle.originX || particle.y !== particle.originY) {
+        if (particle.update()) {
+          hasActiveParticles = true;
+          this.needsRedraw = true;
+        }
       }
     });
+    
     return hasActiveParticles;
   }
 
-  // Add start and stop animation methods
   startAnimation(context: CanvasRenderingContext2D) {
     let lastFrameTime = 0;
     const targetFrameInterval = 1000 / 60;
@@ -200,12 +230,12 @@ class Effect implements EffectProps {
     const animate = (timestamp: number) => {
       if (timestamp - lastFrameTime > targetFrameInterval) {
         lastFrameTime = timestamp;
-        context.clearRect(0, 0, this.width, this.height);
-        this.draw(context);
-        this.update();
-        // const hasActiveParticles = this.update();
-        // Optional: log active particles state
-        // console.log('Active particles:', hasActiveParticles);
+        
+        // Only update and draw if there are active particles or redraw is needed
+        const hasActiveParticles = this.update();
+        if (hasActiveParticles || this.needsRedraw) {
+          this.draw(context);
+        }
       }
       requestAnimationFrame(animate);
     };
@@ -213,11 +243,11 @@ class Effect implements EffectProps {
     animate(0);
   }
 
-  stopAnimation() {
-    if (this.animationId !== null) {
-      cancelAnimationFrame(this.animationId);
-      this.animationId = null;
-    }
+  // Update resize handling
+  updateSize(width: number, height: number) {
+    this.width = width;
+    this.height = height;
+    this.needsRedraw = true;
   }
 }
 
@@ -241,38 +271,37 @@ export function useParticleEffect(canvas: HTMLCanvasElement) {
       );
     };
 
+    // First create the effect
+    const effect = new Effect(window.innerWidth, getDocHeight());
+
+    // Then define updateCanvasSize with access to effect
     const updateCanvasSize = () => {
       canvas.width = window.innerWidth;
       canvas.height = getDocHeight();
       canvas.style.height = `${getDocHeight()}px`;
+      effect.updateSize(canvas.width, canvas.height);
     };
 
+    // Now we can call updateCanvasSize
     updateCanvasSize();
-    const effect = new Effect(canvas.width, canvas.height);
 
-    // Start the animation immediately after creating the effect
+    // Start the animation
     effect.startAnimation(ctx);
 
     const observer = new ResizeObserver(() => {
       updateCanvasSize();
-      effect.width = canvas.width;
-      effect.height = canvas.height;
     });
     observer.observe(document.body);
 
     window.addEventListener('resize', () => {
       updateCanvasSize();
-      effect.width = canvas.width;
-      effect.height = canvas.height;
     });
 
     window.addEventListener('mousemove', (event) => {
-      const rect = canvas.getBoundingClientRect();
       effect.mouse.x = event.clientX;
       effect.mouse.y = event.clientY + window.scrollY;
     });
 
-    // Return function that adds images and updates canvas if needed
     return (image: HTMLImageElement, position: { x: number, y: number }) => {
       effect.addImage(image, position.x, position.y);
       updateCanvasSize();

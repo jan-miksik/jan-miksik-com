@@ -65,6 +65,7 @@
         </div>
       </div>
     </ClientOnly>
+    <span class="edit-request">If you are Jan Miksik showed on this web and want to somehow edit your profile, you can send request to <a href="mailto:edit@janmiksik.com">edit@janmiksik.com</a></span>
   </div> 
   <NuxtPage />
 </template>
@@ -138,6 +139,10 @@ onMounted(() => {
 
 .main-container {
   font-family: system-ui !important;
+  min-height: 2300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .profile-section {
@@ -215,6 +220,14 @@ onMounted(() => {
   height: 150px;
   object-fit: cover;
   margin-bottom: 1rem;
+}
+
+.edit-request {
+  text-align: end;
+  font-size: 0.8rem;
+  opacity: 0.8;
+  opacity: 0.65;
+  padding-bottom: 0.5rem;
 }
 
 /* Mobile styles */
