@@ -1,7 +1,8 @@
-const GAP = 2
+const PIXELS_GAP = 2
 
 const MIN_FRICTION = 0.98;
 const MAX_FRICTION = 0.995;
+
 const MIN_VARIATION = 0.001;
 const MAX_VARIATION = 0.005;
 
@@ -22,6 +23,7 @@ class Particle {
   private angle: number;
   private originX: number;
   private originY: number;
+  public active: boolean;
 
   constructor(effect: Effect, x: number, y: number, color: string, friction: number) {
     this.effect = effect;
@@ -41,25 +43,53 @@ class Particle {
     this.distance = 0;
     this.force = 0;
     this.angle = 0;
+    this.active = false; // Start inactive
   }
-  draw(context: CanvasRenderingContext2D){
-    context.fillStyle = this.color;
-    context.fillRect(this.x, this.y, this.size, this.size)
-  }
-  update() {
-    this.dx = (this.effect.mouse.x ?? 0) - this.x
-    this.dy = (this.effect.mouse.y ?? 0) - this.y
-    this.distance = this.dx * this.dx  + this.dy * this.dy
-    this.force = -this.effect.mouse.radius / this.distance;
 
-    if (this.distance < this.effect.mouse.radius){
-      this.angle = Math.atan2(this.dy, this.dx);
-      this.vx += this.force * Math.cos(this.angle);
-      this.vy += this.force * Math.sin(this.angle);
+  draw(context: CanvasRenderingContext2D) {
+    context.fillStyle = this.color;
+    context.fillRect(this.x, this.y, this.size, this.size);
+  }
+
+  update() {
+    this.dx = (this.effect.mouse.x ?? 0) - this.x;
+    this.dy = (this.effect.mouse.y ?? 0) - this.y;
+    this.distance = this.dx * this.dx + this.dy * this.dy;
+
+    // Check if particle should be active
+    if (this.distance < this.effect.mouse.radius) {
+      this.active = true;
     }
 
-    this.x += (this.vx *= this.friction) + (this.originX - this.x) * this.ease;
-    this.y += (this.vy *= this.friction) + (this.originY - this.y) * this.ease;
+    // If particle is active, apply forces
+    if (this.active) {
+      if (this.distance < this.effect.mouse.radius) {
+        this.force = -this.effect.mouse.radius / this.distance;
+        this.angle = Math.atan2(this.dy, this.dx);
+        this.vx += this.force * Math.cos(this.angle);
+        this.vy += this.force * Math.sin(this.angle);
+      }
+
+      // Update position
+      this.x += (this.vx *= this.friction);
+      this.y += (this.vy *= this.friction);
+
+      // Add spring force back to original position
+      const dx = this.originX - this.x;
+      const dy = this.originY - this.y;
+      this.x += dx * this.ease;
+      this.y += dy * this.ease;
+
+      // Check if particle should become inactive
+      const distanceFromOrigin = dx * dx + dy * dy;
+      if (distanceFromOrigin < 0.1 && Math.abs(this.vx) < 0.01 && Math.abs(this.vy) < 0.01) {
+        this.active = false;
+        this.x = this.originX;
+        this.y = this.originY;
+        this.vx = 0;
+        this.vy = 0;
+      }
+    }
   }
 }
 
@@ -92,7 +122,7 @@ class Effect implements EffectProps {
     width: number;
     height: number;
   }> = [];
-  private frame: number;
+  private animationId: number | null = null;
 
   constructor(width: number, height: number) {
     this.width = width;
@@ -100,28 +130,12 @@ class Effect implements EffectProps {
     this.particlesArray = [];
     this.centerX = this.width * 0.5;
     this.centerY = this.height * 0.5;
-    this.gap = GAP;
-    this.frame = 0;
+    this.gap = PIXELS_GAP;
     this.mouse = {
       radius: 3000,
       x: undefined,
       y: undefined,
     };
-  }
-
-  private checkCollision(x: number, y: number, width: number, height: number): boolean {
-    const padding = 150; // Extra space between images
-    
-    for (const img of this.images) {
-      // Check if rectangles overlap
-      if (!(x + width + padding < img.x || 
-            x > img.x + img.width + padding || 
-            y + height + padding < img.y || 
-            y > img.y + img.height + padding)) {
-        return true; // Collision detected
-      }
-    }
-    return false; // No collision
   }
 
   addImage(image: HTMLImageElement, x: number, y: number) {
@@ -136,7 +150,6 @@ class Effect implements EffectProps {
   }
 
   private initImage(image: HTMLImageElement, x: number, y: number) {
-    // Create temporary canvas to read image data
     const tempCanvas = document.createElement('canvas');
     const tempCtx = tempCanvas.getContext('2d');
     if (!tempCtx) return;
@@ -146,7 +159,7 @@ class Effect implements EffectProps {
     tempCtx.drawImage(image, x, y);
     
     const pixels = tempCtx.getImageData(0, 0, this.width, this.height).data;
-    const friction = MIN_FRICTION + Math.random() * (MAX_FRICTION - MIN_FRICTION); // Random friction between 0.9 and 0.993
+    const friction = MIN_FRICTION + Math.random() * (MAX_FRICTION - MIN_FRICTION);
 
     for (let y = 0; y < this.height; y += this.gap) {
       for (let x = 0; x < this.width; x += this.gap) {
@@ -164,17 +177,47 @@ class Effect implements EffectProps {
     }
   }
 
-  draw(context: CanvasRenderingContext2D){
-    this.particlesArray.forEach(particle => particle.draw(context))
+  draw(context: CanvasRenderingContext2D) {
+    this.particlesArray.forEach(particle => particle.draw(context));
   }
-  update(){
-    this.particlesArray.forEach(particle => particle.update())
 
-    // optimization
-    // this.frame++;
-    // this.particlesArray.forEach((particle, index) => {
-    //   if (index % 2 === this.frame % 2) particle.update(); // Update half the particles per frame
-    // });
+  update() {
+    let hasActiveParticles = false;
+    this.particlesArray.forEach(particle => {
+      particle.update();
+      if (particle.active) {
+        hasActiveParticles = true;
+      }
+    });
+    return hasActiveParticles;
+  }
+
+  // Add start and stop animation methods
+  startAnimation(context: CanvasRenderingContext2D) {
+    let lastFrameTime = 0;
+    const targetFrameInterval = 1000 / 60;
+
+    const animate = (timestamp: number) => {
+      if (timestamp - lastFrameTime > targetFrameInterval) {
+        lastFrameTime = timestamp;
+        context.clearRect(0, 0, this.width, this.height);
+        this.draw(context);
+        this.update();
+        // const hasActiveParticles = this.update();
+        // Optional: log active particles state
+        // console.log('Active particles:', hasActiveParticles);
+      }
+      requestAnimationFrame(animate);
+    };
+
+    animate(0);
+  }
+
+  stopAnimation() {
+    if (this.animationId !== null) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = null;
+    }
   }
 }
 
@@ -183,10 +226,10 @@ export function useParticleEffect(canvas: HTMLCanvasElement) {
   if (!ctx) return;
 
   try {
-    // Get full document height
     const getDocHeight = () => {
       const body = document.body;
       const html = document.documentElement;
+      const MAX_HEIGHT_FALLBACK = 2300;
       
       return Math.max(
         body.scrollHeight,
@@ -194,11 +237,10 @@ export function useParticleEffect(canvas: HTMLCanvasElement) {
         html.clientHeight,
         html.scrollHeight,
         html.offsetHeight,
-        2300
+        MAX_HEIGHT_FALLBACK,
       );
     };
 
-    // Set initial canvas size
     const updateCanvasSize = () => {
       canvas.width = window.innerWidth;
       canvas.height = getDocHeight();
@@ -208,7 +250,9 @@ export function useParticleEffect(canvas: HTMLCanvasElement) {
     updateCanvasSize();
     const effect = new Effect(canvas.width, canvas.height);
 
-    // Update canvas size when content changes
+    // Start the animation immediately after creating the effect
+    effect.startAnimation(ctx);
+
     const observer = new ResizeObserver(() => {
       updateCanvasSize();
       effect.width = canvas.width;
@@ -216,28 +260,17 @@ export function useParticleEffect(canvas: HTMLCanvasElement) {
     });
     observer.observe(document.body);
 
-    // Handle window resize
     window.addEventListener('resize', () => {
       updateCanvasSize();
       effect.width = canvas.width;
       effect.height = canvas.height;
     });
 
-    // Update mouse coordinates with scroll position
     window.addEventListener('mousemove', (event) => {
       const rect = canvas.getBoundingClientRect();
       effect.mouse.x = event.clientX;
       effect.mouse.y = event.clientY + window.scrollY;
     });
-
-    function animate() {
-      if (!ctx) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      effect.draw(ctx);
-      effect.update();
-      requestAnimationFrame(animate);
-    }
-    animate();
 
     // Return function that adds images and updates canvas if needed
     return (image: HTMLImageElement, position: { x: number, y: number }) => {
@@ -249,4 +282,4 @@ export function useParticleEffect(canvas: HTMLCanvasElement) {
   } catch (error) {
     console.error('Error in particle effect:', error);
   }
-} 
+}
