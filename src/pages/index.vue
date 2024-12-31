@@ -1,6 +1,6 @@
 <template>
   <div class="main-container">
-    <h1 class="title"><span class="title-part-a">Name of all persons here is</span><br>
+    <h1 class="title"><span class="title-part-a">Name of all persons here is</span>
       <span class="title-part-b">Jan Mikšík</span></h1>
     <ClientOnly>
       <!-- Canvas only shows on desktop -->
@@ -65,7 +65,7 @@
         </div>
       </div>
     </ClientOnly>
-    <span class="edit-request">If you are Jan Miksik showed on this web and want to somehow edit your profile, you can send request to <a href="mailto:edit@janmiksik.com">edit@janmiksik.com</a></span>
+    <span class="edit-request">If you are Jan Miksik and want to somehow edit your profile or like to add your profile, you can send request to <a href="mailto:edit@janmiksik.com">edit@janmiksik.com</a></span>
   </div> 
   <NuxtPage />
 </template>
@@ -155,6 +155,7 @@ onMounted(() => {
   top: 100%;
   left: 0;
   margin-left: -7px;
+  margin-top: -15px;
   z-index: -1;
   width: 167px;
   text-align: justify;
@@ -177,15 +178,22 @@ onMounted(() => {
 }
 
 .title {
-  margin-bottom: 5rem;
-  font-size: 2rem;
   color: #222;
-  text-align: center;
+  font-size: 2rem;
+
+  margin-bottom: 5rem;
+  margin-top: 1rem;
+  margin-left: 1rem;
+
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .title-part-a {
-  font-size: 1.6rem;
-  opacity: 0.8;
+  font-size: 1.5rem;
+  opacity: 0.6;
 }
 
 .social-links a {
@@ -223,11 +231,12 @@ onMounted(() => {
 }
 
 .edit-request {
-  text-align: end;
   font-size: 0.8rem;
   opacity: 0.8;
   opacity: 0.65;
-  padding-bottom: 0.5rem;
+  position: relative;
+  padding-bottom: 2rem;
+  padding-left: 1rem;
 }
 
 /* Mobile styles */
