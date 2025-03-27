@@ -1,4 +1,10 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+
+const title = 'Jan Mikšík'
+const description = 'Various profiles of Jan Mikšík'
+const url = 'https://janmiksik.com/'
+const twitter = '@MiksikJan'
+
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devtools: {
@@ -8,17 +14,43 @@ export default defineNuxtConfig({
   ssr: false,
   app: {
     head: {
-      title: 'Jan Mikšík',
+      title,
       meta: [
+        // base
         { charset: 'utf-8' },
-        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'description', content: 'Various profiles of Jan Mikšík' },
-        { name: 'theme-color', content: '#ffffff' },
-        { name: 'format-detection', content: 'telephone=no' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=5' },
+        { name: 'description', content: description },
+        { name: 'keywords', content: 'Jan Mikšík, profile, identity, social media, me' },
+        { name: 'robots', content: 'index, follow' },
+        { name: 'language', content: 'English' },
+        { name: 'author', content: 'Jan Mikšík' },
+        { name: 'generator', content: 'Nuxt.js' },
+
+        // Open Graph (Facebook)
+        { name: 'og:type', content: 'website' },
+        { name: 'og:title', content: title },
+        { name: 'og:description', content: description },
+        { name: 'og:site_name', content: title },
+        { name: 'og:url', content: url },
+        { name: 'og:locale', content: 'en_US' },
+        // { name: 'og:image', content: `${url}/og-image.jpg` },
+
+        // Twitter
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:title', content: title },
+        { name: 'twitter:description', content: description },
+        { name: 'twitter:site', content: twitter },
+        { name: 'twitter:creator', content: twitter },
+        // { name: 'twitter:image', content: 'https://www.yourdomain.com/twitter-image.jpg' },
       ],
       htmlAttrs: {
         lang: 'en'
-      }
+      },
+      link: [
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+        { rel: 'canonical', href: url },
+
+      ]
     }
   },
   modules: [

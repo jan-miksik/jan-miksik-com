@@ -161,6 +161,7 @@ onMounted(() => {
   text-align: justify;
   line-height: 20px;
   font-size: 15px;
+  z-index: 1;
 }
 
 .description {
