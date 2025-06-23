@@ -4,6 +4,7 @@ const title = 'Jan Mikšík'
 const description = 'Various profiles of Jan Mikšík'
 const url = 'https://janmiksik.com/'
 const twitter = '@MiksikJan'
+const mainImage = 'https://janmiksik.com/soc-share.png'
 
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
@@ -12,6 +13,11 @@ export default defineNuxtConfig({
   },
   srcDir: 'src/',
   ssr: false,
+  nitro: {
+    output: {
+      dir: 'dist'
+    }
+  },
   app: {
     head: {
       title,
@@ -33,7 +39,7 @@ export default defineNuxtConfig({
         { name: 'og:site_name', content: title },
         { name: 'og:url', content: url },
         { name: 'og:locale', content: 'en_US' },
-        // { name: 'og:image', content: `${url}/og-image.jpg` },
+        { name: 'og:image', content: mainImage },
 
         // Twitter
         { name: 'twitter:card', content: 'summary_large_image' },
@@ -41,7 +47,7 @@ export default defineNuxtConfig({
         { name: 'twitter:description', content: description },
         { name: 'twitter:site', content: twitter },
         { name: 'twitter:creator', content: twitter },
-        // { name: 'twitter:image', content: 'https://www.yourdomain.com/twitter-image.jpg' },
+        { name: 'twitter:image', content: mainImage },
       ],
       htmlAttrs: {
         lang: 'en'
@@ -49,7 +55,6 @@ export default defineNuxtConfig({
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
         { rel: 'canonical', href: url },
-
       ]
     }
   },
