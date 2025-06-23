@@ -2,7 +2,6 @@
   <div class="main-container">
     <h1 class="title"><span class="title-part-a">Name of all persons here is</span>
       <span class="title-part-b">Jan Mikšík</span></h1>
-      <img src="/.." width="300" height="300"/>
     <ClientOnly>
       <!-- Canvas only shows on desktop -->
       <Suspense>
