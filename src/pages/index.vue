@@ -85,7 +85,7 @@ const imagePositions = ref<Array<{ x: number; y: number }>>([])
 
 const preventOpen = (e: Event) => {
   e.preventDefault()
-  alert('You are viewing the exhibition version of janmiksik.com. External links are disabled in this version. To access the fully functional site, please visit janmiksik.com on your own device.')
+  alert('You are viewing the exhibition version of janmiksik.com. External links are disabled in this version. To access the fully functional site, please visit janmiksik.com on your device.')
 }
 
 
