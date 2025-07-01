@@ -1,4 +1,5 @@
 <template>
+  <div class="janmiksik-com-banner">janmiksik.com</div>
   <div class="main-container">
     <h1 class="title"><span class="title-part-a">Name of all persons here is</span>
       <span class="title-part-b">Jan Mikšík</span></h1>
@@ -46,16 +47,16 @@
               <span class="description-text">{{ profile.description }}</span>
             </p>
             <div class="social-links">
-              <span v-if="profile.social.linkedIn">
+              <span v-if="profile.social.linkedIn" @click.stop="preventOpen">
                 <a :href="profile.social.linkedIn" target="_blank" rel="noopener noreferrer">LinkedIn</a>
               </span>
-              <span v-if="profile.social.facebook">
+              <span v-if="profile.social.facebook" @click.stop="preventOpen">
                 <a :href="profile.social.facebook" target="_blank" rel="noopener noreferrer">Facebook</a>
               </span>
-              <span v-if="profile.social.github">
+              <span v-if="profile.social.github" @click.stop="preventOpen">
                 <a :href="profile.social.github" target="_blank" rel="noopener noreferrer">Github</a>
               </span>
-              <span v-if="profile.moreInfo">
+              <span v-if="profile.moreInfo" @click.stop="preventOpen">
                 <a :href="profile.moreInfo" target="_blank" rel="noopener noreferrer">
                   {{ profile.moreInfoText }}
                 </a>
@@ -65,7 +66,7 @@
         </div>
       </div>
     </ClientOnly>
-    <span class="edit-request">If you are Jan Miksik and want to somehow edit your profile or like to add your profile, you can send request to <a href="mailto:edit@janmiksik.com">edit@janmiksik.com</a></span>
+    <span @click.stop="preventOpen" class="edit-request">If you are Jan Miksik and want to somehow edit your profile or like to add your profile, you can send request to <a href="mailto:edit@janmiksik.com">edit@janmiksik.com</a></span>
   </div> 
   <NuxtPage />
 </template>
@@ -81,6 +82,11 @@ const imageRefs = ref<(HTMLImageElement | null)[]>([])
 const isMobile = ref(false)
 const imagePositions = ref<Array<{ x: number; y: number }>>([])
 // const isCanvasReady = ref(false)
+
+const preventOpen = (e: Event) => {
+  e.preventDefault()
+  alert('This is the exhibition version of janmiksik.com. External links are disabled in this version. For fully functional version, please visit janmiksik.com')
+}
 
 
 onMounted(() => {
@@ -183,7 +189,7 @@ onMounted(() => {
   font-size: 2rem;
 
   margin-bottom: 5rem;
-  margin-top: 1rem;
+  margin-top: 2rem;
   margin-left: 1rem;
 
   display: flex;
@@ -282,5 +288,19 @@ onMounted(() => {
     animation: none !important;
     transition: none !important;
   }
+}
+
+.janmiksik-com-banner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 30px;
+  background-color: #3b3b3f;
+  color: #fff;
+  font-family: system-ui;
+  text-align: center;
+  align-content: center;
+  border-bottom: 1px solid #303034;
 }
 </style>
