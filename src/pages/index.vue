@@ -32,7 +32,7 @@
           <!-- Hidden image for particle effect on desktop -->
           <img 
             v-else
-            :ref="el => imageRefs[index] = el as HTMLImageElement"
+            :ref="(el: any) => imageRefs[index] = el as HTMLImageElement"
             :src="profile.profileFoto"
             :alt="`Profile Photo ${index + 1}`"
             class="hidden-image"
