@@ -2,6 +2,7 @@
   "name": "nuxt-app",
   "private": true,
   "type": "module",
+  "packageManager": "yarn@4.9.1",
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
