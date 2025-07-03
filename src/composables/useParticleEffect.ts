@@ -161,39 +161,54 @@ class Effect implements EffectProps {
   }
 
   private initImage(image: HTMLImageElement, x: number, y: number) {
-    const tempCanvas = document.createElement('canvas');
-    const tempCtx = tempCanvas.getContext('2d');
-    if (!tempCtx) return;
+    try {
+      const tempCanvas = document.createElement('canvas');
+      
+      const tempCtx = tempCanvas.getContext('2d');
+      if (!tempCtx) {
+        return;
+      }
 
-    tempCanvas.width = this.width;
-    tempCanvas.height = this.height;
-    tempCtx.drawImage(image, x, y);
-    
-    const pixels = tempCtx.getImageData(0, 0, this.width, this.height).data;
-    const friction = MIN_FRICTION + Math.random() * (MAX_FRICTION - MIN_FRICTION);
+      tempCanvas.width = this.width;
+      tempCanvas.height = this.height;
+      
+      tempCtx.drawImage(image, x, y);
+      
+      const pixels = tempCtx.getImageData(0, 0, this.width, this.height).data;
+      
+      const friction = MIN_FRICTION + Math.random() * (MAX_FRICTION - MIN_FRICTION);
 
-    for (let y = 0; y < this.height; y += this.gap) {
-      for (let x = 0; x < this.width; x += this.gap) {
-        const index = (y * this.width + x) * 4;
-        const alpha = pixels[index + 3];
-        
-        if (alpha > 0) {
-          const red = pixels[index];
-          const green = pixels[index + 1];
-          const blue = pixels[index + 2];
-          const color = `rgb(${red},${green},${blue})`;
-          this.particlesArray.push(new Particle(this, x, y, color, friction));
+      let particleCount = 0;
+      for (let y = 0; y < this.height; y += this.gap) {
+        for (let x = 0; x < this.width; x += this.gap) {
+          const index = (y * this.width + x) * 4;
+          const alpha = pixels[index + 3];
+          
+          if (alpha > 0) {
+            const red = pixels[index];
+            const green = pixels[index + 1];
+            const blue = pixels[index + 2];
+            const color = `rgb(${red},${green},${blue})`;
+            this.particlesArray.push(new Particle(this, x, y, color, friction));
+            particleCount++;
+          }
         }
       }
+    } catch (error) {
+      console.error('[ParticleEffect] Error in initImage:', error);
     }
   }
 
   draw(context: CanvasRenderingContext2D) {
     // Only redraw if needed
     if (this.needsRedraw) {
-      context.clearRect(0, 0, this.width, this.height);
-      this.particlesArray.forEach(particle => particle.draw(context));
-      this.needsRedraw = false;
+      try {
+        context.clearRect(0, 0, this.width, this.height);
+        this.particlesArray.forEach(particle => particle.draw(context));
+        this.needsRedraw = false;
+      } catch (error) {
+        console.error('[ParticleEffect] Error in draw:', error);
+      }
     }
   }
 
@@ -226,18 +241,26 @@ class Effect implements EffectProps {
   startAnimation(context: CanvasRenderingContext2D) {
     let lastFrameTime = 0;
     const targetFrameInterval = 1000 / 60;
+    let frameCount = 0;
 
     const animate = (timestamp: number) => {
-      if (timestamp - lastFrameTime > targetFrameInterval) {
-        lastFrameTime = timestamp;
-        
-        // Only update and draw if there are active particles or redraw is needed
-        const hasActiveParticles = this.update();
-        if (hasActiveParticles || this.needsRedraw) {
-          this.draw(context);
+      try {
+        if (timestamp - lastFrameTime > targetFrameInterval) {
+          lastFrameTime = timestamp;
+          frameCount++;
+          
+          // Only update and draw if there are active particles or redraw is needed
+          const hasActiveParticles = this.update();
+          if (hasActiveParticles || this.needsRedraw) {
+            this.draw(context);
+          }
         }
+        requestAnimationFrame(animate);
+      } catch (error) {
+        console.error('[ParticleEffect] Error in animation frame:', error);
+        // Continue animation even if there's an error
+        requestAnimationFrame(animate);
       }
-      requestAnimationFrame(animate);
     };
 
     animate(0);
@@ -253,7 +276,9 @@ class Effect implements EffectProps {
 
 export function useParticleEffect(canvas: HTMLCanvasElement) {
   const ctx = canvas.getContext('2d');
-  if (!ctx) return;
+  if (!ctx) {
+    return;
+  }
 
   try {
     const getDocHeight = () => {
@@ -261,7 +286,7 @@ export function useParticleEffect(canvas: HTMLCanvasElement) {
       const html = document.documentElement;
       const MAX_HEIGHT_FALLBACK = 2300;
       
-      return Math.max(
+      const height = Math.max(
         body.scrollHeight,
         body.offsetHeight,
         html.clientHeight,
@@ -269,46 +294,101 @@ export function useParticleEffect(canvas: HTMLCanvasElement) {
         html.offsetHeight,
         MAX_HEIGHT_FALLBACK,
       );
+      
+      return height;
     };
 
-    // First create the effect
-    const effect = new Effect(window.innerWidth, getDocHeight());
-
-    // Then define updateCanvasSize with access to effect
-    const updateCanvasSize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = getDocHeight();
-      canvas.style.height = `${getDocHeight()}px`;
-      effect.updateSize(canvas.width, canvas.height);
+    // Proper canvas initialization
+    const initializeCanvas = () => {
+      try {
+        const newWidth = window.innerWidth;
+        const newHeight = getDocHeight();
+        
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+        canvas.style.height = `${newHeight}px`;
+        
+        // Initialize canvas context with a minimal draw to "warm it up"
+        ctx.fillStyle = 'transparent';
+        ctx.fillRect(0, 0, 1, 1);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        return { width: newWidth, height: newHeight };
+      } catch (error) {
+        console.error('[ParticleEffect] Error in canvas initialization:', error);
+        return null;
+      }
     };
 
-    // Now we can call updateCanvasSize
-    updateCanvasSize();
+    // Initialize canvas immediately
+    const canvasDimensions = initializeCanvas();
+    if (!canvasDimensions) {
+      return;
+    }
 
-    // Start the animation
-    effect.startAnimation(ctx);
+    // Create effect instance
+    let effect: Effect | null = null;
+    let isInitialized = false;
 
-    const observer = new ResizeObserver(() => {
-      updateCanvasSize();
-    });
-    observer.observe(document.body);
+    // Initialize the effect with a delay to ensure DOM is ready
+    const initializeEffect = () => {
+      effect = new Effect(canvasDimensions.width, canvasDimensions.height);
 
-    window.addEventListener('resize', () => {
-      updateCanvasSize();
-    });
+      // Start the animation
+      effect.startAnimation(ctx);
 
-    window.addEventListener('mousemove', (event) => {
-      effect.mouse.x = event.clientX;
-      effect.mouse.y = event.clientY + window.scrollY;
-    });
+      try {
+        const observer = new ResizeObserver(() => {
+          const dims = initializeCanvas();
+          if (dims && effect) {
+            effect.updateSize(dims.width, dims.height);
+          }
+        });
+        observer.observe(document.body);
+      } catch (error) {
+        console.error('[ParticleEffect] Error setting up ResizeObserver:', error);
+      }
 
+      window.addEventListener('resize', () => {
+        const dims = initializeCanvas();
+        if (dims && effect) {
+          effect.updateSize(dims.width, dims.height);
+        }
+      });
+
+      window.addEventListener('mousemove', (event) => {
+        if (effect) {
+          effect.mouse.x = event.clientX;
+          effect.mouse.y = event.clientY + window.scrollY;
+        }
+      });
+
+      isInitialized = true;
+    };
+
+    // Initialize effect after a short delay to ensure DOM is ready
+    setTimeout(initializeEffect, 100);
+
+    // Return the add image function
     return (image: HTMLImageElement, position: { x: number, y: number }) => {
-      effect.addImage(image, position.x, position.y);
-      updateCanvasSize();
+      const addImageWhenReady = () => {
+        if (effect && isInitialized) {
+          effect.addImage(image, position.x, position.y);
+          const dims = initializeCanvas();
+          if (dims) {
+            effect.updateSize(dims.width, dims.height);
+          }
+        } else {
+          // Wait a bit more if effect isn't ready
+          setTimeout(addImageWhenReady, 50);
+        }
+      };
+
+      addImageWhenReady();
       return position;
     };
     
   } catch (error) {
-    console.error('Error in particle effect:', error);
+    console.error('[ParticleEffect] Error in particle effect:', error);
   }
 }

@@ -5,16 +5,16 @@
       <span class="title-part-b">Jan Mikšík</span></h1>
     <ClientOnly>
       <!-- Canvas only shows on desktop -->
-      <Suspense>
-        <canvas 
-          v-if="!isMobile" 
-          ref="mainCanvas" 
-          class="fullscreen-canvas"
-        ></canvas>
-        <template #fallback>
+      <!-- <Suspense> -->
+      <canvas 
+        v-if="!isMobile" 
+        ref="mainCanvas" 
+        class="fullscreen-canvas"
+      ></canvas>
+        <!-- <template #fallback>
           <div class="loading">Loading...</div>
-        </template>
-      </Suspense>
+        </template> -->
+      <!-- </Suspense> -->
       
       <div class="profiles-container">
         <div 
@@ -189,7 +189,7 @@ onMounted(() => {
   font-size: 2rem;
 
   margin-bottom: 5rem;
-  margin-top: 2rem;
+  margin-top: 3.5rem;
   margin-left: 1rem;
 
   display: flex;
@@ -295,12 +295,13 @@ onMounted(() => {
   top: 0;
   left: 0;
   width: 100%;
-  height: 30px;
+  height: 50px;
   background-color: #3b3b3f;
   color: #fff;
   font-family: system-ui;
   text-align: center;
   align-content: center;
   border-bottom: 1px solid #303034;
+  font-size: 1.25rem;
 }
 </style>
