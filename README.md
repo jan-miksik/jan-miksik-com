@@ -1,75 +1,11 @@
-# Nuxt Minimal Starter
+# About janmiksik.com
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+Web art project, collecting people who have the same name as me.
 
-## Setup
+It is interactive website, which serve as crossroad from where you can go to specific Jan Miksik profile.
 
-Make sure to install dependencies:
+No other of people with same full name as me register this domain before and I decided to share it in my way.
 
-```bash
-# npm
-npm install
+The list of people with same name is not complete, it was’t goal. However I offer option to send me email if somebody with same full name as me wants to be added, edited or removed from this website.
 
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
-```
-
-## Development Server
-
-Start the development server on `http://localhost:3000`:
-
-```bash
-# npm
-npm run dev
-
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
-```
-
-## Production
-
-Build the application for production:
-
-```bash
-# npm
-npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
-```
-
-Locally preview production build:
-
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+The profiles are loaded in randomised position each time to equalise positional advantage/disadvantage.
