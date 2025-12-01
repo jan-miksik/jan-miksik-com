@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@nuxt/image": "^1.8.1",
+    "@vueuse/core": "^14.1.0",
+    "@vueuse/nuxt": "^14.1.0",
     "nuxt": "^3.14.1592",
     "vue": "^3.4.21",
     "vue-router": "^4.3.0"

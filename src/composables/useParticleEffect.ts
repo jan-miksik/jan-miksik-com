@@ -1,3 +1,7 @@
+import { ref, readonly, type Ref } from 'vue'
+import { LAYOUT, ANIMATION } from '~/constants'
+import { logError } from '~/lib/errorHandler'
+
 const PIXELS_GAP = 2
 
 const MIN_FRICTION = 0.98;
@@ -223,24 +227,39 @@ class Effect implements EffectProps {
     return hasActiveParticles;
   }
 
+  private animationFrameId: number | null = null;
+
   startAnimation(context: CanvasRenderingContext2D) {
     let lastFrameTime = 0;
-    const targetFrameInterval = 1000 / 60;
+    const targetFrameInterval = ANIMATION.FRAME_INTERVAL;
 
     const animate = (timestamp: number) => {
-      if (timestamp - lastFrameTime > targetFrameInterval) {
-        lastFrameTime = timestamp;
-        
-        // Only update and draw if there are active particles or redraw is needed
-        const hasActiveParticles = this.update();
-        if (hasActiveParticles || this.needsRedraw) {
-          this.draw(context);
+      try {
+        if (timestamp - lastFrameTime > targetFrameInterval) {
+          lastFrameTime = timestamp;
+          
+          // Only update and draw if there are active particles or redraw is needed
+          const hasActiveParticles = this.update();
+          if (hasActiveParticles || this.needsRedraw) {
+            this.draw(context);
+          }
         }
+        this.animationFrameId = requestAnimationFrame(animate);
+      } catch (error) {
+        logError('ParticleEffect', error, 'Error in animation frame');
+        // Continue animation even if there's an error
+        this.animationFrameId = requestAnimationFrame(animate);
       }
-      requestAnimationFrame(animate);
     };
 
-    animate(0);
+    this.animationFrameId = requestAnimationFrame(animate);
+  }
+
+  stopAnimation() {
+    if (this.animationFrameId !== null) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
   }
 
   // Update resize handling
@@ -251,15 +270,51 @@ class Effect implements EffectProps {
   }
 }
 
-export function useParticleEffect(canvas: HTMLCanvasElement) {
+/**
+ * Result object returned by useParticleEffect composable
+ */
+interface ParticleEffectResult {
+  /** Adds an image to the particle effect at the specified position */
+  addImage: (image: HTMLImageElement, position: { x: number; y: number }) => { x: number; y: number };
+  /** Cleans up all resources (event listeners, animation frames, observers) */
+  cleanup: () => void;
+  /** Reactive reference to any error that occurred during initialization or operation */
+  error: Readonly<Ref<Error | null>>;
+}
+
+/**
+ * Creates a particle effect on the given canvas element.
+ * The effect creates interactive particles from images that respond to mouse movement.
+ * 
+ * @param canvas - The HTML canvas element to render the particle effect on
+ * @returns An object with methods to add images, cleanup resources, and check for errors, or undefined if initialization fails
+ * 
+ * @example
+ * ```typescript
+ * const canvas = document.querySelector('canvas');
+ * const effect = useParticleEffect(canvas);
+ * if (effect) {
+ *   effect.addImage(imageElement, { x: 100, y: 200 });
+ *   // Later, cleanup when done
+ *   effect.cleanup();
+ * }
+ * ```
+ */
+export function useParticleEffect(canvas: HTMLCanvasElement): ParticleEffectResult | undefined {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
+
+  const error = ref<Error | null>(null);
+
+  const setError = (err: unknown, additionalInfo?: string) => {
+    const errorObj = logError('ParticleEffect', err, additionalInfo);
+    error.value = errorObj;
+  };
 
   try {
     const getDocHeight = () => {
       const body = document.body;
       const html = document.documentElement;
-      const MAX_HEIGHT_FALLBACK = 2300;
       
       return Math.max(
         body.scrollHeight,
@@ -267,48 +322,146 @@ export function useParticleEffect(canvas: HTMLCanvasElement) {
         html.clientHeight,
         html.scrollHeight,
         html.offsetHeight,
-        MAX_HEIGHT_FALLBACK,
+        LAYOUT.PAGE_MIN_HEIGHT,
       );
     };
 
-    // First create the effect
-    const effect = new Effect(window.innerWidth, getDocHeight());
-
-    // Then define updateCanvasSize with access to effect
-    const updateCanvasSize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = getDocHeight();
-      canvas.style.height = `${getDocHeight()}px`;
-      effect.updateSize(canvas.width, canvas.height);
+    // Proper canvas initialization
+    const initializeCanvas = () => {
+      try {
+        const newWidth = window.innerWidth;
+        const newHeight = getDocHeight();
+        
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+        canvas.style.height = `${newHeight}px`;
+        
+        // Initialize canvas context with a minimal draw to "warm it up"
+        ctx.fillStyle = 'transparent';
+        ctx.fillRect(0, 0, 1, 1);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        return { width: newWidth, height: newHeight };
+      } catch (err) {
+        setError(err);
+        return null;
+      }
     };
 
-    // Now we can call updateCanvasSize
-    updateCanvasSize();
+    // Create effect instance
+    let effect: Effect | null = null;
+    let isInitialized = false;
+    let resizeObserver: ResizeObserver | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const cleanupFunctions: Array<() => void> = [];
 
-    // Start the animation
-    effect.startAnimation(ctx);
+    const initializeEffect = () => {
+      const dims = initializeCanvas();
+      if (!dims) return;
 
-    const observer = new ResizeObserver(() => {
-      updateCanvasSize();
-    });
-    observer.observe(document.body);
+      effect = new Effect(dims.width, dims.height);
+      effect.startAnimation(ctx);
 
-    window.addEventListener('resize', () => {
-      updateCanvasSize();
-    });
+      // Setup ResizeObserver
+      try {
+        const resizeObserverCallback = () => {
+          const dims = initializeCanvas();
+          if (dims && effect) {
+            effect.updateSize(dims.width, dims.height);
+          }
+        };
 
-    window.addEventListener('mousemove', (event) => {
-      effect.mouse.x = event.clientX;
-      effect.mouse.y = event.clientY + window.scrollY;
-    });
+        resizeObserver = new ResizeObserver(resizeObserverCallback);
+        resizeObserver.observe(document.body);
+        cleanupFunctions.push(() => {
+          resizeObserver?.disconnect();
+        });
+      } catch (err) {
+        setError(err);
+      }
 
-    return (image: HTMLImageElement, position: { x: number, y: number }) => {
-      effect.addImage(image, position.x, position.y);
-      updateCanvasSize();
-      return position;
+      // Setup resize event listener
+      const handleResize = () => {
+        const dims = initializeCanvas();
+        if (dims && effect) {
+          effect.updateSize(dims.width, dims.height);
+        }
+      };
+
+      window.addEventListener('resize', handleResize);
+      cleanupFunctions.push(() => {
+        window.removeEventListener('resize', handleResize);
+      });
+
+      // Setup mousemove event listener
+      const handleMousemove = (event: MouseEvent) => {
+        if (effect) {
+          effect.mouse.x = event.clientX;
+          effect.mouse.y = event.clientY + window.scrollY;
+        }
+      };
+
+      window.addEventListener('mousemove', handleMousemove);
+      cleanupFunctions.push(() => {
+        window.removeEventListener('mousemove', handleMousemove);
+      });
+
+      isInitialized = true;
+    };
+
+    timeoutId = setTimeout(initializeEffect, ANIMATION.INITIALIZATION_DELAY);
+
+    const addImage = (image: HTMLImageElement, position: { x: number, y: number }) => {
+      try {
+        const addImageWhenReady = () => {
+          if (effect && isInitialized) {
+            try {
+              effect.addImage(image, position.x, position.y);
+              const dims = initializeCanvas();
+              if (dims) {
+                effect.updateSize(dims.width, dims.height);
+              }
+            } catch (err) {
+              setError(err);
+            }
+          } else {
+            setTimeout(addImageWhenReady, ANIMATION.IMAGE_RETRY_DELAY);
+          }
+        };
+
+        addImageWhenReady();
+        return position;
+      } catch (err) {
+        setError(err);
+        return position;
+      }
+    };
+
+    const cleanup = () => {
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+
+      if (effect) {
+        effect.stopAnimation();
+      }
+
+      cleanupFunctions.forEach(cleanup => cleanup());
+      cleanupFunctions.length = 0;
+
+      effect = null;
+      isInitialized = false;
+    };
+
+    return {
+      addImage,
+      cleanup,
+      error: readonly(error),
     };
     
-  } catch (error) {
-    console.error('Error in particle effect:', error);
+  } catch (err) {
+    setError(err);
+    return undefined;
   }
 }

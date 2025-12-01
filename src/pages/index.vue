@@ -26,16 +26,24 @@
           <img 
             v-if="isMobile"
             :src="profile.profileFoto"
-            :alt="`Profile Photo ${index + 1}`"
+            :alt="`Profile photo of Jan Mikšík${profile.description ? ` - ${profile.description}` : ''}`"
+            :aria-label="`Profile photo${profile.description ? `: ${profile.description}` : ' of Jan Mikšík'}`"
             class="profile-image"
+            loading="lazy"
+            @load="handleImageLoad"
+            @error="handleImageError"
           />
           <!-- Hidden image for particle effect on desktop -->
           <img 
             v-else
-            :ref="(el: any) => imageRefs[index] = el as HTMLImageElement"
+            :ref="(el) => setImageRef(el, index)"
             :src="profile.profileFoto"
-            :alt="`Profile Photo ${index + 1}`"
+            :alt="`Profile photo of Jan Mikšík${profile.description ? ` - ${profile.description}` : ''}`"
+            :aria-label="`Profile photo${profile.description ? `: ${profile.description}` : ' of Jan Mikšík'}`"
             class="hidden-image"
+            loading="lazy"
+            @load="handleImageLoad"
+            @error="handleImageError"
           />
           
           <!-- Image placeholder only needed for desktop -->
@@ -45,27 +53,50 @@
             <p class="description" v-if="profile.description">
               <span class="description-text">{{ profile.description }}</span>
             </p>
-            <div class="social-links">
+            <nav class="social-links" aria-label="Social media links">
               <span v-if="profile.social.linkedIn">
-                <a :href="profile.social.linkedIn" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+                <a 
+                  :href="profile.social.linkedIn" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  aria-label="LinkedIn profile"
+                >LinkedIn</a>
               </span>
               <span v-if="profile.social.facebook">
-                <a :href="profile.social.facebook" target="_blank" rel="noopener noreferrer">Facebook</a>
+                <a 
+                  :href="profile.social.facebook" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  aria-label="Facebook profile"
+                >Facebook</a>
               </span>
               <span v-if="profile.social.github">
-                <a :href="profile.social.github" target="_blank" rel="noopener noreferrer">Github</a>
+                <a 
+                  :href="profile.social.github" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  aria-label="GitHub profile"
+                >Github</a>
               </span>
               <span v-if="profile.moreInfo">
-                <a :href="profile.moreInfo" target="_blank" rel="noopener noreferrer">
+                <a 
+                  :href="profile.moreInfo" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  :aria-label="profile.moreInfoText || 'More info'"
+                >
                   {{ profile.moreInfoText }}
                 </a>
               </span>
-            </div>
+            </nav>
           </div>
         </div>
       </div>
     </ClientOnly>
-    <span class="edit-request">If you are Jan Miksik and want to somehow edit your profile or like to add your profile, you can send request to <a href="mailto:edit@janmiksik.com">edit@janmiksik.com</a></span>
+    <p class="edit-request" aria-label="Contact information for profile edits">
+      If you are Jan Miksik and want to somehow edit your profile or like to add your profile, you can send request to 
+      <a href="mailto:edit@janmiksik.com" aria-label="Send email to edit@janmiksik.com">edit@janmiksik.com</a>
+    </p>
   </div> 
   <NuxtPage />
 </template>
@@ -74,23 +105,59 @@
 import { profilesData } from '~/data'
 import { useParticleEffect } from '~/composables/useParticleEffect'
 import { findValidPosition } from '~/composables/useFindValidPosition'
+import { LAYOUT, CANVAS } from '~/constants'
+import { logError } from '~/lib/errorHandler'
 
 const randomizedProfiles = ref<typeof profilesData>([...profilesData])
 const mainCanvas = ref<HTMLCanvasElement | null>(null)
 const imageRefs = ref<(HTMLImageElement | null)[]>([])
 const isMobile = ref(false)
 const imagePositions = ref<Array<{ x: number; y: number }>>([])
-// const isCanvasReady = ref(false)
 
+const setImageRef = (el: Element | ComponentPublicInstance | null, index: number) => {
+  if (el && el instanceof HTMLImageElement) {
+    imageRefs.value[index] = el
+  }
+}
+
+
+const minHeight = `${LAYOUT.PAGE_MIN_HEIGHT}px`
+const mobileBreakpoint = `${LAYOUT.MOBILE_BREAKPOINT}px`
+const profileImageWidth = `${CANVAS.PROFILE_IMAGE_WIDTH}px`
+const profileImageHeight = `${CANVAS.PROFILE_IMAGE_HEIGHT}px`
+const canvasZIndex = CANVAS.CANVAS_Z_INDEX
+
+// Store cleanup function for particle effect
+let particleEffectCleanup: (() => void) | null = null
+
+// Handle resize for mobile detection
+const handleResize = () => {
+  isMobile.value = window.innerWidth <= LAYOUT.MOBILE_BREAKPOINT
+}
+
+// Handle image load
+const handleImageLoad = (event: Event) => {
+  const img = event.target as HTMLImageElement
+  if (img) {
+    img.classList.add('loaded')
+  }
+}
+
+// Handle image error
+const handleImageError = (event: Event) => {
+  const img = event.target as HTMLImageElement
+  if (img) {
+    logError('Image', new Error('Failed to load image'), img.src)
+    img.classList.add('error')
+  }
+}
 
 onMounted(() => {
   // Check if device is mobile
-  isMobile.value = window.innerWidth <= 768
+  isMobile.value = window.innerWidth <= LAYOUT.MOBILE_BREAKPOINT
   
   // Update isMobile on resize
-  window.addEventListener('resize', () => {
-    isMobile.value = window.innerWidth <= 768
-  })
+  window.addEventListener('resize', handleResize)
 
   if (isMobile.value) return;
 
@@ -101,23 +168,29 @@ onMounted(() => {
 
     // First, position all text blocks
     randomizedProfiles.value.forEach((profile, index) => {
-      const textWidth = 164;
-      const textHeight = 150;
-      
-      const position = findValidPosition(textWidth, textHeight, existingPositions);
+      const position = findValidPosition(LAYOUT.PROFILE_TEXT_WIDTH, LAYOUT.PROFILE_TEXT_HEIGHT, existingPositions);
       
       existingPositions.push({
         ...position,
-        width: textWidth,
-        height: textHeight
+        width: LAYOUT.PROFILE_TEXT_WIDTH,
+        height: LAYOUT.PROFILE_TEXT_HEIGHT
       });
       imagePositions.value[index] = position;
     });
 
 
     if (!mainCanvas.value) return;
-    const addImage = useParticleEffect(mainCanvas.value);
-    if (!addImage) return;
+    const particleEffect = useParticleEffect(mainCanvas.value);
+    if (!particleEffect) return;
+
+    // Check for errors
+    if (particleEffect.error.value) {
+      logError('ParticleEffect', particleEffect.error.value, 'Initialization error');
+      return;
+    }
+
+    // Store cleanup function
+    particleEffectCleanup = particleEffect.cleanup;
 
     // Then, add images to match text positions
     imageRefs.value
@@ -129,9 +202,24 @@ onMounted(() => {
           x: textPosition.x,
           y: textPosition.y
         };
-        addImage(image, imagePosition);
+        particleEffect.addImage(image, imagePosition);
+        
+        // Check for errors after adding image
+        if (particleEffect.error.value) {
+          logError('ParticleEffect', particleEffect.error.value, 'Error adding image');
+        }
       });
   });
+})
+
+// Cleanup before unmount
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize)
+  // Cleanup particle effect if it was initialized
+  if (particleEffectCleanup) {
+    particleEffectCleanup()
+    particleEffectCleanup = null
+  }
 })
 </script>
 
@@ -139,7 +227,7 @@ onMounted(() => {
 
 .main-container {
   font-family: system-ui !important;
-  min-height: 2300px;
+  min-height: v-bind('minHeight');
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -156,7 +244,6 @@ onMounted(() => {
   left: 0;
   margin-left: -7px;
   margin-top: -15px;
-  z-index: -1;
   width: 167px;
   text-align: justify;
   line-height: 20px;
@@ -217,7 +304,7 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 100;
+  z-index: v-bind('canvasZIndex');
 }
 
 .hidden-image {
@@ -225,15 +312,14 @@ onMounted(() => {
 }
 
 .profile-image {
-  width: 150px;
-  height: 150px;
+  width: v-bind('profileImageWidth');
+  height: v-bind('profileImageHeight');
   object-fit: cover;
   margin-bottom: 1rem;
 }
 
 .edit-request {
   font-size: 0.8rem;
-  opacity: 0.8;
   opacity: 0.65;
   position: relative;
   padding-bottom: 2rem;
@@ -241,7 +327,7 @@ onMounted(() => {
 }
 
 /* Mobile styles */
-@media (max-width: 768px) {
+@media (max-width: v-bind('mobileBreakpoint')) {
   .profile-section {
     display: flex;
     flex-direction: column;

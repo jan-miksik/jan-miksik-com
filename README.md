@@ -1,11 +1,19 @@
-# About janmiksik.com
+# janmiksik.com
 
-Web art project, collecting people who have the same name as me.<br><br>
+**web art project, collecting people who have the same name as me.**
 
-It is interactive website, which serve as crossroad from where you can go to specific Jan Miksik profile.<br><br>
+This is an interactive website that serves as a crossroads from which you can visit a specific Jan Miksik profile. No other person with the same full name as me had registered this domain before, so I decided to share it in my own way.
+The list of people with the same name is not complete; that wasn’t the goal. However, I offer the option to email me if someone with the same full name wants to be added, edited, or removed from the website. The profiles are loaded in a random position each time to equalise positional advantages and disadvantages.
 
-No other of people with same full name as me register this domain before and I decided to share it in my way.<br><br>
+## Preview
+![Preview of janmiksik.com](public/preview-janmiksik.com.png)
 
-The list of people with same name is not complete, it was’t goal. However I offer option to send me email if somebody with same full name as me wants to be added, edited or removed from this website.<br><br>
+## Inspiration
 
-The profiles are loaded in randomised position each time to equalise positional advantage/disadvantage.
+This project was inspired by the interactive particle effect technique demonstrated in this video: [Interactive Particle Effect Tutorial](https://youtu.be/vAJEHf92tV0?si=clGZUQZ3xsbpuP3g)
+
+## Tech Stack
+
+- [Nuxt 3](https://nuxt.com/) - Vue.js meta-framework for building modern web applications
+- [Vue 3](https://vuejs.org/) - Progressive JavaScript framework
+- Native HTML5 Canvas for interactive particle effects

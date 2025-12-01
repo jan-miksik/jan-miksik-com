@@ -1,0 +1,27 @@
+/**
+ * Sizes are in pixels and times are in milliseconds
+ */
+export const LAYOUT = {
+  PAGE_MIN_HEIGHT: 2300,
+  PROFILE_TEXT_WIDTH: 164,
+  PROFILE_TEXT_HEIGHT: 150,
+  POSITION_MARGIN: 100,
+  MOBILE_BREAKPOINT: 768,
+  COLLISION_PADDING: 50,
+  MAX_POSITION_ATTEMPTS: 50,
+  FALLBACK_SPACING: 50,
+} as const;
+
+export const ANIMATION = {
+  TARGET_FPS: 60,
+  FRAME_INTERVAL: 1000 / 60,
+  INITIALIZATION_DELAY: 100,
+  IMAGE_RETRY_DELAY: 50,
+} as const;
+
+export const CANVAS = {
+  PROFILE_IMAGE_WIDTH: 150,
+  PROFILE_IMAGE_HEIGHT: 150,
+  CANVAS_Z_INDEX: 100,
+} as const;
+
