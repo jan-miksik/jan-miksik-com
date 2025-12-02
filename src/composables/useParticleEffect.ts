@@ -1,14 +1,6 @@
 import { ref, readonly, type Ref } from 'vue'
-import { LAYOUT, ANIMATION } from '~/constants'
+import { LAYOUT, ANIMATION, PARTICLE } from '~/constants'
 import { logError } from '~/lib/errorHandler'
-
-const PIXELS_GAP = 2
-
-const MIN_FRICTION = 0.98;
-const MAX_FRICTION = 0.995;
-
-const MIN_VARIATION = 0.001;
-const MAX_VARIATION = 0.005;
 
 class Particle {
   public x: number;
@@ -40,7 +32,7 @@ class Particle {
     this.vx = 0;
     this.vy = 0;
     this.ease = 0.03;
-    const variation = MIN_VARIATION + Math.random() * (MAX_VARIATION - MIN_VARIATION);
+    const variation = PARTICLE.MIN_VARIATION + Math.random() * (PARTICLE.MAX_VARIATION - PARTICLE.MIN_VARIATION);
     this.friction = friction + variation;
     this.dx = 0;
     this.dy = 0;
@@ -145,7 +137,7 @@ class Effect implements EffectProps {
     this.particlesArray = [];
     this.centerX = this.width * 0.5;
     this.centerY = this.height * 0.5;
-    this.gap = PIXELS_GAP;
+    this.gap = PARTICLE.PIXELS_GAP;
     this.mouse = {
       radius: 3000,
       x: undefined,
@@ -174,7 +166,7 @@ class Effect implements EffectProps {
     tempCtx.drawImage(image, x, y);
     
     const pixels = tempCtx.getImageData(0, 0, this.width, this.height).data;
-    const friction = MIN_FRICTION + Math.random() * (MAX_FRICTION - MIN_FRICTION);
+    const friction = PARTICLE.MIN_FRICTION + Math.random() * (PARTICLE.MAX_FRICTION - PARTICLE.MIN_FRICTION);
 
     for (let y = 0; y < this.height; y += this.gap) {
       for (let x = 0; x < this.width; x += this.gap) {
@@ -228,6 +220,8 @@ class Effect implements EffectProps {
   }
 
   private animationFrameId: number | null = null;
+  private errorCount = 0;
+  private readonly MAX_ERRORS = 10;
 
   startAnimation(context: CanvasRenderingContext2D) {
     let lastFrameTime = 0;
@@ -244,10 +238,16 @@ class Effect implements EffectProps {
             this.draw(context);
           }
         }
+        this.errorCount = 0; // Reset error count on successful frame
         this.animationFrameId = requestAnimationFrame(animate);
       } catch (error) {
         logError('ParticleEffect', error, 'Error in animation frame');
-        // Continue animation even if there's an error
+        this.errorCount++;
+        if (this.errorCount >= this.MAX_ERRORS) {
+          logError('ParticleEffect', 'Too many errors, stopping animation');
+          this.stopAnimation();
+          return;
+        }
         this.animationFrameId = requestAnimationFrame(animate);
       }
     };

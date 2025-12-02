@@ -55,11 +55,34 @@ export default defineNuxtConfig({
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
         { rel: 'canonical', href: url },
-      ]
+      ],
+      script: [
+        {
+          type: 'application/ld+json',
+          innerHTML: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            name: title,
+            description: description,
+            url: url,
+            author: {
+              '@type': 'Person',
+              name: 'Jan Mikšík',
+            },
+            publisher: {
+              '@type': 'Person',
+              name: 'Jan Mikšík',
+            },
+            image: mainImage,
+            inLanguage: 'en',
+          }),
+        },
+      ],
     }
   },
   modules: [
     '@nuxt/image',
     '@vueuse/nuxt',
+    '@nuxtjs/seo',
   ],
 })

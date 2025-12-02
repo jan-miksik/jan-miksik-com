@@ -25,3 +25,11 @@ export const CANVAS = {
   CANVAS_Z_INDEX: 100,
 } as const;
 
+export const PARTICLE = {
+  PIXELS_GAP: 2,
+  MIN_FRICTION: 0.98,
+  MAX_FRICTION: 0.995,
+  MIN_VARIATION: 0.001,
+  MAX_VARIATION: 0.005,
+} as const;
+

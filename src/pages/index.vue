@@ -1,26 +1,30 @@
 <template>
   <div class="main-container">
     <h1 class="title"><span class="title-part-a">Name of all persons here is</span>
-      <span class="title-part-b">Jan Mikšík</span></h1>
-    <ClientOnly>
-      <!-- Canvas only shows on desktop -->
-      <Suspense>
-        <canvas 
-          v-if="!isMobile" 
-          ref="mainCanvas" 
-          class="fullscreen-canvas"
-        ></canvas>
-        <template #fallback>
-          <div class="loading">Loading...</div>
-        </template>
-      </Suspense>
-      
-      <div class="profiles-container">
+      <span class="title-part-b">Jan Mikšík</span>
+    </h1>
+      <ClientOnly>
+        <!-- Canvas only shows on desktop -->
+        <Suspense>
+          <canvas 
+            v-if="!isMobile" 
+            ref="mainCanvas" 
+            class="fullscreen-canvas"
+          ></canvas>
+          <template #fallback>
+            <div class="loading">Loading...</div>
+          </template>
+        </Suspense>
+        
+        <div class="profiles-container">
         <div 
           v-for="(profile, index) in randomizedProfiles" 
           :key="profile.profileFoto"
           class="profile-section"
-          :style="`left: ${imagePositions[index]?.x}px; top: ${imagePositions[index]?.y}px`"
+          :style="{
+            left: `${imagePositions[index]?.x}px`,
+            top: `${imagePositions[index]?.y}px`
+          }"
         >
           <!-- Show normal image on mobile -->
           <img 
@@ -92,7 +96,7 @@
           </div>
         </div>
       </div>
-    </ClientOnly>
+      </ClientOnly>
     <p class="edit-request" aria-label="Contact information for profile edits">
       If you are Jan Miksik and want to somehow edit your profile or like to add your profile, you can send request to 
       <a href="mailto:edit@janmiksik.com" aria-label="Send email to edit@janmiksik.com">edit@janmiksik.com</a>
@@ -152,16 +156,28 @@ const handleImageError = (event: Event) => {
   }
 }
 
+// Fisher-Yates shuffle algorithm for true random distribution
+const shuffle = <T>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
 onMounted(() => {
   // Check if device is mobile
-  isMobile.value = window.innerWidth <= LAYOUT.MOBILE_BREAKPOINT
-  
-  // Update isMobile on resize
-  window.addEventListener('resize', handleResize)
+  if (typeof window !== 'undefined') {
+    isMobile.value = window.innerWidth <= LAYOUT.MOBILE_BREAKPOINT
+    
+    // Update isMobile on resize
+    window.addEventListener('resize', handleResize)
+  }
 
   if (isMobile.value) return;
 
-  randomizedProfiles.value = [...profilesData].sort(() => Math.random() - 0.5)
+  randomizedProfiles.value = shuffle(profilesData)
 
   nextTick(async () => {
     const existingPositions: Array<{ x: number, y: number, width: number, height: number }> = [];

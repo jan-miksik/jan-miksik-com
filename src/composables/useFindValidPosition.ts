@@ -17,6 +17,10 @@ import { LAYOUT } from '~/constants'
  * ```
  */
 export const findValidPosition = (textWidth: number, textHeight: number, existingPositions: Array<{ x: number, y: number, width: number, height: number }>) => {
+  if (typeof window === 'undefined') {
+    return { x: 0, y: 0 };
+  }
+
   const checkCollision = (x: number, y: number, width: number, height: number) => {
     for (const pos of existingPositions) {
       if (!(x + width + LAYOUT.COLLISION_PADDING < pos.x || 

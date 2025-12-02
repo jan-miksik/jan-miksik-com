@@ -31,7 +31,18 @@ export function logError(context: string, err: unknown, additionalInfo?: string)
     ? `${prefix} ${additionalInfo}: ${errorObj.message}`
     : `${prefix} ${errorObj.message}`;
   
-  console.error(message, errorObj);
+  // Update the error object's message to include context and additional info
+  errorObj.message = message;
+  
+  // Only log to console in development or test environments
+  if (import.meta.env.DEV || import.meta.env.MODE === 'test') {
+    console.error(message, errorObj);
+  }
+  
+  // Send to error tracking in all environments
+  if (import.meta.env.PROD) {
+    // Example: Sentry.captureException(errorObj, { tags: { context }, extra: { additionalInfo } });
+  }
   return errorObj;
 }
 

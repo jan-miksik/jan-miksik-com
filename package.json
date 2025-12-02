@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "nuxt build",
+    "test": "vitest",
     "dev": "nuxt dev",
     "d": "nuxt dev",
     "deploy": "fleek sites deploy",
@@ -13,10 +14,16 @@
   },
   "dependencies": {
     "@nuxt/image": "^1.8.1",
+    "@nuxtjs/seo": "^3.2.2",
     "@vueuse/core": "^14.1.0",
     "@vueuse/nuxt": "^14.1.0",
     "nuxt": "^3.14.1592",
     "vue": "^3.4.21",
     "vue-router": "^4.3.0"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^27",
+    "jsdom": "^27.2.0",
+    "vitest": "^4.0.14"
   }
 }
