@@ -5,16 +5,11 @@
     </h1>
       <ClientOnly>
         <!-- Canvas only shows on desktop -->
-        <Suspense>
-          <canvas 
-            v-if="!isMobile" 
-            ref="mainCanvas" 
-            class="fullscreen-canvas"
-          ></canvas>
-          <template #fallback>
-            <div class="loading">Loading...</div>
-          </template>
-        </Suspense>
+        <canvas 
+          v-if="!isMobile" 
+          ref="mainCanvas" 
+          class="fullscreen-canvas"
+        ></canvas>
         
         <div class="profiles-container">
         <div 
@@ -45,7 +40,6 @@
             :alt="`Profile photo of Jan Mikšík${profile.description ? ` - ${profile.description}` : ''}`"
             :aria-label="`Profile photo${profile.description ? `: ${profile.description}` : ' of Jan Mikšík'}`"
             class="hidden-image"
-            loading="lazy"
             @load="handleImageLoad"
             @error="handleImageError"
           />
@@ -161,7 +155,7 @@ const shuffle = <T>(array: T[]): T[] => {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    [shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!];
   }
   return shuffled;
 };
@@ -215,8 +209,8 @@ onMounted(() => {
         const textPosition = imagePositions.value[index];
 
         const imagePosition = {
-          x: textPosition.x,
-          y: textPosition.y
+          x: textPosition?.x ?? 0,
+          y: textPosition?.y ?? 0
         };
         particleEffect.addImage(image, imagePosition);
         

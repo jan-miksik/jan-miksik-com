@@ -157,30 +157,34 @@ class Effect implements EffectProps {
   }
 
   private initImage(image: HTMLImageElement, x: number, y: number) {
-    const tempCanvas = document.createElement('canvas');
-    const tempCtx = tempCanvas.getContext('2d');
-    if (!tempCtx) return;
+    try {
+      const tempCanvas = document.createElement('canvas');
+      const tempCtx = tempCanvas.getContext('2d');
+      if (!tempCtx) return;
 
-    tempCanvas.width = this.width;
-    tempCanvas.height = this.height;
-    tempCtx.drawImage(image, x, y);
-    
-    const pixels = tempCtx.getImageData(0, 0, this.width, this.height).data;
-    const friction = PARTICLE.MIN_FRICTION + Math.random() * (PARTICLE.MAX_FRICTION - PARTICLE.MIN_FRICTION);
+      tempCanvas.width = this.width;
+      tempCanvas.height = this.height;
+      tempCtx.drawImage(image, x, y);
+      
+      const pixels = tempCtx.getImageData(0, 0, this.width, this.height).data;
+      const friction = PARTICLE.MIN_FRICTION + Math.random() * (PARTICLE.MAX_FRICTION - PARTICLE.MIN_FRICTION);
 
-    for (let y = 0; y < this.height; y += this.gap) {
-      for (let x = 0; x < this.width; x += this.gap) {
-        const index = (y * this.width + x) * 4;
-        const alpha = pixels[index + 3];
-        
-        if (alpha > 0) {
-          const red = pixels[index];
-          const green = pixels[index + 1];
-          const blue = pixels[index + 2];
-          const color = `rgb(${red},${green},${blue})`;
-          this.particlesArray.push(new Particle(this, x, y, color, friction));
+      for (let y = 0; y < this.height; y += this.gap) {
+        for (let x = 0; x < this.width; x += this.gap) {
+          const index = (y * this.width + x) * 4;
+          const alpha = pixels[index + 3];
+          
+          if (alpha && alpha > 0) {
+            const red = pixels[index];
+            const green = pixels[index + 1];
+            const blue = pixels[index + 2];
+            const color = `rgb(${red},${green},${blue})`;
+            this.particlesArray.push(new Particle(this, x, y, color, friction));
+          }
         }
       }
+    } catch (error) {
+      logError('ParticleEffect', error, 'Error in initImage');
     }
   }
 
