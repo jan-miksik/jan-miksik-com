@@ -23,7 +23,7 @@ describe('normalizeError', () => {
 
 describe('logError', () => {
   it('logs the error with context and additional info', () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = vi.spyOn(globalThis.console, 'error').mockImplementation(() => {})
     
     const result = logError('TestContext', 'failure', 'Additional info')
     

@@ -130,10 +130,9 @@ const handleResize = () => {
   isMobile.value = window.innerWidth <= LAYOUT.MOBILE_BREAKPOINT
 }
 
-// Helper function to get common image attributes (alt and aria-label)
+// Helper function to get common image attributes (alt)
 const getImageAttributes = (profile: typeof profilesData[0]) => ({
   alt: `Profile photo of Jan Mikšík${profile.description ? ` - ${profile.description}` : ''}`,
-  'aria-label': `Profile photo${profile.description ? `: ${profile.description}` : ' of Jan Mikšík'}`,
 })
 
 // Handle image load

@@ -89,5 +89,6 @@ export default defineNuxtConfig({
     '@nuxt/image',
     '@vueuse/nuxt',
     '@nuxtjs/seo',
-  ],
+    '@nuxtjs/sitemap',
+  ]
 })
