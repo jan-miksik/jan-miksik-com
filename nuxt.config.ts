@@ -6,6 +6,24 @@ const url = 'https://janmiksik.com/'
 const twitter = '@MiksikJan'
 const mainImage = 'https://janmiksik.com/soc-share.png'
 
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: title,
+  description: description,
+  url: url,
+  author: {
+    '@type': 'Person',
+    name: 'Jan Mikšík',
+  },
+  publisher: {
+    '@type': 'Person',
+    name: 'Jan Mikšík',
+  },
+  image: mainImage,
+  inLanguage: 'en',
+}
+
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devtools: {
@@ -32,14 +50,17 @@ export default defineNuxtConfig({
         { name: 'author', content: 'Jan Mikšík' },
         { name: 'generator', content: 'Nuxt.js' },
 
-        // Open Graph (Facebook)
-        { name: 'og:type', content: 'website' },
-        { name: 'og:title', content: title },
-        { name: 'og:description', content: description },
-        { name: 'og:site_name', content: title },
-        { name: 'og:url', content: url },
-        { name: 'og:locale', content: 'en_US' },
-        { name: 'og:image', content: mainImage },
+        // Open Graph (Facebook) - use 'property' not 'name' for OG tags
+        { property: 'og:type', content: 'website' },
+        { property: 'og:title', content: title },
+        { property: 'og:description', content: description },
+        { property: 'og:site_name', content: title },
+        { property: 'og:url', content: url },
+        { property: 'og:locale', content: 'en_US' },
+        { property: 'og:image', content: mainImage },
+        { property: 'og:image:width', content: '1200' },
+        { property: 'og:image:height', content: '630' },
+        { property: 'og:image:type', content: 'image/png' },
 
         // Twitter
         { name: 'twitter:card', content: 'summary_large_image' },
@@ -59,23 +80,7 @@ export default defineNuxtConfig({
       script: [
         {
           type: 'application/ld+json',
-          innerHTML: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'WebSite',
-            name: title,
-            description: description,
-            url: url,
-            author: {
-              '@type': 'Person',
-              name: 'Jan Mikšík',
-            },
-            publisher: {
-              '@type': 'Person',
-              name: 'Jan Mikšík',
-            },
-            image: mainImage,
-            inLanguage: 'en',
-          }),
+          innerHTML: JSON.stringify(structuredData),
         },
       ],
     }

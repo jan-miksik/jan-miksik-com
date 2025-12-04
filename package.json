@@ -10,7 +10,11 @@
     "deploy": "fleek sites deploy",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "lint": "eslint . --ext .vue,.js,.ts,.jsx,.tsx",
+    "lint:fix": "eslint . --ext .vue,.js,.ts,.jsx,.tsx --fix",
+    "format": "prettier --write \"**/*.{js,ts,vue,json,css,scss,md}\"",
+    "format:check": "prettier --check \"**/*.{js,ts,vue,json,css,scss,md}\""
   },
   "dependencies": {
     "@nuxt/image": "^1.8.1",
@@ -22,8 +26,17 @@
     "vue-router": "^4.3.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.1",
     "@types/jsdom": "^27",
+    "@typescript-eslint/eslint-plugin": "^8.48.1",
+    "@typescript-eslint/parser": "^8.48.1",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-vue": "^10.6.2",
     "jsdom": "^27.2.0",
+    "prettier": "^3.7.4",
+    "typescript-eslint": "^8.48.1",
     "vitest": "^4.0.14"
   }
 }

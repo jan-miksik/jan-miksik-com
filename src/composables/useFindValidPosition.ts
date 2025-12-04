@@ -21,6 +21,22 @@ export const findValidPosition = (textWidth: number, textHeight: number, existin
     return { x: 0, y: 0 };
   }
 
+  // Validate input dimensions
+  if (!Number.isFinite(textWidth) || !Number.isFinite(textHeight) || textWidth <= 0 || textHeight <= 0) {
+    if (import.meta.env.DEV) {
+      console.warn('[findValidPosition] Invalid dimensions provided:', { textWidth, textHeight });
+    }
+    return { x: 0, y: 0 };
+  }
+
+  // Validate existingPositions is an array
+  if (!Array.isArray(existingPositions)) {
+    if (import.meta.env.DEV) {
+      console.warn('[findValidPosition] existingPositions must be an array');
+    }
+    return { x: 0, y: 0 };
+  }
+
   const checkCollision = (x: number, y: number, width: number, height: number) => {
     for (const pos of existingPositions) {
       if (!(x + width + LAYOUT.COLLISION_PADDING < pos.x || 

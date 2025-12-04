@@ -44,6 +44,43 @@ describe('findValidPosition', () => {
 
     expect(collidesWithExisting).toBe(false)
   })
+
+  describe('input validation', () => {
+    it('returns {0, 0} for zero width', () => {
+      const result = findValidPosition(0, 100, [])
+      expect(result).toEqual({ x: 0, y: 0 })
+    })
+
+    it('returns {0, 0} for zero height', () => {
+      const result = findValidPosition(100, 0, [])
+      expect(result).toEqual({ x: 0, y: 0 })
+    })
+
+    it('returns {0, 0} for negative width', () => {
+      const result = findValidPosition(-10, 100, [])
+      expect(result).toEqual({ x: 0, y: 0 })
+    })
+
+    it('returns {0, 0} for negative height', () => {
+      const result = findValidPosition(100, -10, [])
+      expect(result).toEqual({ x: 0, y: 0 })
+    })
+
+    it('returns {0, 0} for NaN width', () => {
+      const result = findValidPosition(NaN, 100, [])
+      expect(result).toEqual({ x: 0, y: 0 })
+    })
+
+    it('returns {0, 0} for Infinity width', () => {
+      const result = findValidPosition(Infinity, 100, [])
+      expect(result).toEqual({ x: 0, y: 0 })
+    })
+
+    it('returns {0, 0} when existingPositions is not an array', () => {
+      const result = findValidPosition(100, 100, null)
+      expect(result).toEqual({ x: 0, y: 0 })
+    })
+  })
 })
 
 

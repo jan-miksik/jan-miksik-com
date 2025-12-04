@@ -25,8 +25,7 @@
           <img 
             v-if="isMobile"
             :src="profile.profileFoto"
-            :alt="`Profile photo of Jan Mikšík${profile.description ? ` - ${profile.description}` : ''}`"
-            :aria-label="`Profile photo${profile.description ? `: ${profile.description}` : ' of Jan Mikšík'}`"
+            v-bind="getImageAttributes(profile)"
             class="profile-image"
             loading="lazy"
             @load="handleImageLoad"
@@ -37,8 +36,7 @@
             v-else
             :ref="(el) => setImageRef(el, index)"
             :src="profile.profileFoto"
-            :alt="`Profile photo of Jan Mikšík${profile.description ? ` - ${profile.description}` : ''}`"
-            :aria-label="`Profile photo${profile.description ? `: ${profile.description}` : ' of Jan Mikšík'}`"
+            v-bind="getImageAttributes(profile)"
             class="hidden-image"
             @load="handleImageLoad"
             @error="handleImageError"
@@ -112,12 +110,11 @@ const imageRefs = ref<(HTMLImageElement | null)[]>([])
 const isMobile = ref(false)
 const imagePositions = ref<Array<{ x: number; y: number }>>([])
 
-const setImageRef = (el: Element | ComponentPublicInstance | null, index: number) => {
+const setImageRef = (el: Element | ComponentPublicInstance | null, index: number): void => {
   if (el && el instanceof HTMLImageElement) {
     imageRefs.value[index] = el
   }
 }
-
 
 const minHeight = `${LAYOUT.PAGE_MIN_HEIGHT}px`
 const mobileBreakpoint = `${LAYOUT.MOBILE_BREAKPOINT}px`
@@ -132,6 +129,12 @@ let particleEffectCleanup: (() => void) | null = null
 const handleResize = () => {
   isMobile.value = window.innerWidth <= LAYOUT.MOBILE_BREAKPOINT
 }
+
+// Helper function to get common image attributes (alt and aria-label)
+const getImageAttributes = (profile: typeof profilesData[0]) => ({
+  alt: `Profile photo of Jan Mikšík${profile.description ? ` - ${profile.description}` : ''}`,
+  'aria-label': `Profile photo${profile.description ? `: ${profile.description}` : ' of Jan Mikšík'}`,
+})
 
 // Handle image load
 const handleImageLoad = (event: Event) => {

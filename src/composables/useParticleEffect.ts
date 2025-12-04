@@ -183,6 +183,11 @@ class Effect implements EffectProps {
           }
         }
       }
+
+      // Explicit cleanup: clear canvas to help GC release memory immediately
+      tempCtx.clearRect(0, 0, this.width, this.height);
+      tempCanvas.width = 0;
+      tempCanvas.height = 0;
     } catch (error) {
       logError('ParticleEffect', error, 'Error in initImage');
     }
